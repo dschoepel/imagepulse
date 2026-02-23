@@ -130,6 +130,29 @@ export function getAllSettings() {
   return Object.fromEntries(rows.map((r) => [r.key, r.value]));
 }
 
+export function seedSettingsFromEnv() {
+  const mapping = {
+    ntfy_url:      process.env.NTFY_URL,
+    ntfy_topic:    process.env.NTFY_TOPIC,
+    ntfy_token:    process.env.NTFY_TOKEN,
+    smtp_host:     process.env.SMTP_HOST,
+    smtp_port:     process.env.SMTP_PORT,
+    smtp_secure:   process.env.SMTP_SECURE,
+    smtp_user:     process.env.SMTP_USER,
+    smtp_pass:     process.env.SMTP_PASS,
+    email_from:    process.env.EMAIL_FROM,
+    email_to:      process.env.EMAIL_TO,
+    retention_days: process.env.RETENTION_DAYS,
+  };
+  const stmt = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
+  const run = db.transaction(() => {
+    for (const [key, value] of Object.entries(mapping)) {
+      if (value !== undefined && value !== '') stmt.run(key, value);
+    }
+  });
+  run();
+}
+
 export function pruneOldEvents(days) {
   if (!days || days <= 0) return 0;
   const result = db

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getSetting } from '../db/index.js';
 
 /**
  * Send an email notification.
@@ -6,20 +7,20 @@ import nodemailer from 'nodemailer';
  * @returns {Promise<void>}
  */
 export async function sendEmail({ subject, text, html }) {
+  const host   = getSetting('smtp_host')   || process.env.SMTP_HOST;
+  const port   = getSetting('smtp_port')   || process.env.SMTP_PORT   || '587';
+  const secure = getSetting('smtp_secure') || process.env.SMTP_SECURE || 'false';
+  const user   = getSetting('smtp_user')   || process.env.SMTP_USER;
+  const pass   = getSetting('smtp_pass')   || process.env.SMTP_PASS;
+  const from   = getSetting('email_from')  || process.env.EMAIL_FROM;
+  const to     = getSetting('email_to')    || process.env.EMAIL_TO;
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-      : undefined,
+    host,
+    port: Number(port),
+    secure: secure === 'true',
+    auth: user ? { user, pass } : undefined,
   });
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to: process.env.EMAIL_TO,
-    subject,
-    text,
-    html,
-  });
+  await transporter.sendMail({ from, to, subject, text, html });
 }

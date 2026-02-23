@@ -7,11 +7,12 @@ import { fileURLToPath } from 'url';
 import webhookRouter from './routes/webhook.js';
 import eventsRouter from './routes/events.js';
 import settingsRouter from './routes/settings.js';
-import { initDb, getSetting, pruneOldEvents } from './db/index.js';
+import { initDb, getSetting, pruneOldEvents, seedSettingsFromEnv } from './db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 initDb();
+seedSettingsFromEnv();
 
 // Run retention prune on startup and every 24 hours
 function runRetention() {

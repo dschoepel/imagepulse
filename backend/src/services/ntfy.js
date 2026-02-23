@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { getSetting } from '../db/index.js';
 
 /**
  * Send an ntfy push notification.
@@ -6,14 +7,14 @@ import fetch from 'node-fetch';
  * @returns {Promise<void>}
  */
 export async function sendNtfy({ title, body, tags = [], priority = 3 }) {
-  const url = process.env.NTFY_URL || 'https://ntfy.sh';
-  const topic = process.env.NTFY_TOPIC;
+  const url   = getSetting('ntfy_url')   || process.env.NTFY_URL   || 'https://ntfy.sh';
+  const topic = getSetting('ntfy_topic') || process.env.NTFY_TOPIC;
+  const token = getSetting('ntfy_token') || process.env.NTFY_TOKEN;
+
   if (!topic) throw new Error('NTFY_TOPIC is not configured');
 
   const headers = { 'Content-Type': 'application/json' };
-  if (process.env.NTFY_TOKEN) {
-    headers['Authorization'] = `Bearer ${process.env.NTFY_TOKEN}`;
-  }
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${url}/${topic}`, {
     method: 'POST',
