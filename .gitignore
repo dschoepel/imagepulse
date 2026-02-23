@@ -2,4 +2,7 @@ node_modules/
 dist/
 .env
 *.db
-data/*.db
+*.db-shm
+*.db-wal
+data/
+!data/.gitkeep
