@@ -1,17 +1,18 @@
-// TODO: Normalise a DIUN webhook payload into the internal event format.
-// DIUN payload reference: https://crazymax.dev/diun/notif/webhook/
-
 /**
- * @param {object} body - Raw DIUN webhook payload
+ * @param {object} body - Raw DIUN webhook payload (flat structure)
  * @returns {{ image: string, tag: string, digest: string, status: string, source: string, rawPayload: object }}
  */
 export function normaliseDiun(body) {
-  // TODO: implement field extraction from DIUN payload structure
+  const rawImage = body.image ?? '';
+  const lastColon = rawImage.lastIndexOf(':');
+  const image = lastColon !== -1 ? rawImage.slice(0, lastColon) : rawImage;
+  const tag = lastColon !== -1 ? rawImage.slice(lastColon + 1) : 'latest';
+
   return {
-    image: body?.entry?.image ?? '',
-    tag: body?.entry?.tag ?? 'latest',
-    digest: body?.entry?.digest ?? '',
-    status: body?.status ?? 'unknown',
+    image,
+    tag,
+    digest: body.digest ?? '',
+    status: body.status ?? 'unknown',
     source: 'diun',
     rawPayload: body,
   };

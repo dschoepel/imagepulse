@@ -1,7 +1,3 @@
-// TODO: Adapter registry — detect payload source and dispatch to the right normaliser.
-// Each adapter returns a normalised event object:
-// { image, tag, digest, status, source, rawPayload }
-
 import { normaliseDiun } from './diun.js';
 
 /**
@@ -10,7 +6,18 @@ import { normaliseDiun } from './diun.js';
  * @returns {{ image: string, tag: string, digest: string, status: string, source: string, rawPayload: object }}
  */
 export function parseWebhook(req) {
-  // TODO: add detection logic for other sources (Watchtower, Portainer, etc.)
-  // For now, assume all payloads are from DIUN.
-  return normaliseDiun(req.body);
+  const body = req.body;
+
+  if (body.diun_version !== undefined) {
+    return normaliseDiun(body);
+  }
+
+  return {
+    image: '',
+    tag: 'latest',
+    digest: '',
+    status: 'unknown',
+    source: 'unknown',
+    rawPayload: body,
+  };
 }

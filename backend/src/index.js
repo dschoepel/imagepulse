@@ -6,13 +6,27 @@ import { fileURLToPath } from 'url';
 import webhookRouter from './routes/webhook.js';
 import eventsRouter from './routes/events.js';
 import settingsRouter from './routes/settings.js';
-import { initDb } from './db/index.js';
+import { initDb, getSetting, pruneOldEvents } from './db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
 initDb();
+
+// Run retention prune on startup and every 24 hours
+function runRetention() {
+  const days = parseInt(getSetting('retention_days') || '0', 10);
+  if (days > 0) {
+    const deleted = pruneOldEvents(days);
+    console.log(`Retention: pruned ${deleted} event(s) older than ${days} day(s)`);
+  } else {
+    console.log('Retention: disabled (retention_days = 0)');
+  }
+}
+
+runRetention();
+setInterval(runRetention, 24 * 60 * 60 * 1000);
 
 const app = express();
 

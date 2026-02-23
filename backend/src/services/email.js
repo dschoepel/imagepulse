@@ -1,4 +1,4 @@
-// TODO: Send an email notification via nodemailer.
+import nodemailer from 'nodemailer';
 
 /**
  * Send an email notification.
@@ -6,8 +6,20 @@
  * @returns {Promise<void>}
  */
 export async function sendEmail({ subject, text, html }) {
-  // TODO: create nodemailer transporter from env vars and send message
-  // SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS
-  // EMAIL_FROM, EMAIL_TO
-  console.log('[email stub] would send:', { subject, text });
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: process.env.SMTP_USER
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      : undefined,
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: process.env.EMAIL_TO,
+    subject,
+    text,
+    html,
+  });
 }
