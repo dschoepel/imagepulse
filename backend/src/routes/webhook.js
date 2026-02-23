@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    markNotified(id);
+    markNotified(id, title, body);
 
     // Prune old events if retention is configured
     const retentionDays = parseInt(getSetting('retention_days') || '0', 10);

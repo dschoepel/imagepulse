@@ -19,17 +19,30 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-function Field({ label, type = 'text', value, onChange, placeholder }) {
+function Field({ label, type = 'text', value, onChange, placeholder, secret = false }) {
+  const [visible, setVisible] = useState(false);
+  const inputType = secret ? (visible ? 'text' : 'password') : type;
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-gray-600">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full max-w-sm"
-      />
+      <div className="flex items-center gap-2 max-w-sm">
+        <input
+          type={inputType}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+        />
+        {secret && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+          >
+            {visible ? 'Hide' : 'Show'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -130,7 +143,7 @@ export default function Settings() {
         </div>
         <Field label="ntfy URL" value={s.ntfy_url ?? ''} onChange={(v) => set('ntfy_url', v)} placeholder="https://ntfy.sh" />
         <Field label="Topic" value={s.ntfy_topic ?? ''} onChange={(v) => set('ntfy_topic', v)} placeholder="my-topic" />
-        <Field label="Token" type="password" value={s.ntfy_token ?? ''} onChange={(v) => set('ntfy_token', v)} placeholder="optional" />
+        <Field label="Token" secret value={s.ntfy_token ?? ''} onChange={(v) => set('ntfy_token', v)} placeholder="optional" />
         <div className="flex gap-3 items-center flex-wrap">
           <button
             onClick={() => saveSection(ntfyKeys, setNtfyStatus)}
@@ -167,7 +180,7 @@ export default function Settings() {
           <span className="text-sm text-gray-600">TLS (port 465)</span>
         </div>
         <Field label="SMTP Username" value={s.smtp_user ?? ''} onChange={(v) => set('smtp_user', v)} />
-        <Field label="SMTP Password" type="password" value={s.smtp_pass ?? ''} onChange={(v) => set('smtp_pass', v)} />
+        <Field label="SMTP Password" secret value={s.smtp_pass ?? ''} onChange={(v) => set('smtp_pass', v)} />
         <Field label="From" value={s.email_from ?? ''} onChange={(v) => set('email_from', v)} placeholder="noreply@example.com" />
         <Field label="To" value={s.email_to ?? ''} onChange={(v) => set('email_to', v)} placeholder="you@example.com" />
         <div className="flex gap-3 items-center flex-wrap">

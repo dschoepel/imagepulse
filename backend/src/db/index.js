@@ -42,6 +42,9 @@ export function initDb() {
     );
   `);
 
+  try { db.exec('ALTER TABLE events ADD COLUMN notification_title TEXT'); } catch {}
+  try { db.exec('ALTER TABLE events ADD COLUMN notification_body TEXT'); } catch {}
+
   return db;
 }
 
@@ -61,8 +64,10 @@ export function insertEvent({ image, tag, digest, status, source, rawPayload }) 
   return result.lastInsertRowid;
 }
 
-export function markNotified(id) {
-  db.prepare(`UPDATE events SET notified_at = datetime('now') WHERE id = ?`).run(id);
+export function markNotified(id, notificationTitle, notificationBody) {
+  db.prepare(`UPDATE events SET notified_at = datetime('now'),
+    notification_title = ?, notification_body = ? WHERE id = ?`)
+    .run(notificationTitle ?? null, notificationBody ?? null, id);
 }
 
 export function getEvents({ page = 1, limit = 25, image = '', status = '' } = {}) {

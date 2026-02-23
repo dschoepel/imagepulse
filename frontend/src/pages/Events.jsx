@@ -14,6 +14,80 @@ function StatusBadge({ status }) {
   );
 }
 
+function RawPayload({ raw }) {
+  const [open, setOpen] = useState(false);
+  let formatted = raw;
+  try { formatted = JSON.stringify(JSON.parse(raw), null, 2); } catch {}
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-indigo-600 hover:underline"
+      >
+        {open ? '▼ Hide raw payload' : '▶ Show raw payload'}
+      </button>
+      {open && (
+        <pre className="mt-2 text-xs bg-gray-900 text-green-300 rounded p-3 overflow-x-auto whitespace-pre-wrap break-all">
+          {formatted}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function EventDetail({ ev }) {
+  let platform = '—';
+  try {
+    const p = JSON.parse(ev.raw_payload);
+    if (p?.platform) platform = p.platform;
+  } catch {}
+
+  return (
+    <div className="bg-indigo-50 px-6 py-4 text-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left — Notification sent */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notification sent</p>
+          {ev.notification_title ? (
+            <>
+              <p className="font-medium text-gray-800 mb-1">{ev.notification_title}</p>
+              <pre className="text-xs text-gray-600 whitespace-pre-wrap bg-white rounded border border-gray-200 p-3">
+                {ev.notification_body}
+              </pre>
+            </>
+          ) : (
+            <p className="text-gray-400 italic">No notification recorded</p>
+          )}
+        </div>
+
+        {/* Right — Metadata */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Metadata</p>
+          <dl className="space-y-1.5 text-xs">
+            <div className="flex gap-2">
+              <dt className="text-gray-500 w-24 shrink-0">Full digest</dt>
+              <dd className="font-mono text-gray-700 break-all">{ev.digest || '—'}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-gray-500 w-24 shrink-0">Platform</dt>
+              <dd className="text-gray-700">{platform}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-gray-500 w-24 shrink-0">Notified at</dt>
+              <dd className="text-gray-700">
+                {ev.notified_at ? new Date(ev.notified_at + 'Z').toLocaleString() : '—'}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      {ev.raw_payload && <RawPayload raw={ev.raw_payload} />}
+    </div>
+  );
+}
+
 export default function Events() {
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -22,6 +96,7 @@ export default function Events() {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -41,6 +116,11 @@ export default function Events() {
 
   function handleFilterChange() {
     setPage(1);
+    setExpandedId(null);
+  }
+
+  function toggleRow(id) {
+    setExpandedId((prev) => (prev === id ? null : id));
   }
 
   const pages = pagination.pages;
@@ -88,6 +168,7 @@ export default function Events() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
+              <th className="w-8 px-2 py-3" />
               {['Image', 'Tag', 'Status', 'Source', 'Digest', 'Time'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">
                   {h}
@@ -98,24 +179,40 @@ export default function Events() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">Loading…</td>
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">Loading…</td>
               </tr>
             ) : events.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">No events found</td>
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">No events found</td>
               </tr>
             ) : (
               events.map((ev) => (
-                <tr key={ev.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700 max-w-xs truncate">{ev.image}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
-                  <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
-                  <td className="px-4 py-3 text-gray-500">{ev.source}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400">{(ev.digest || '').slice(0, 12)}</td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                    {new Date(ev.created_at + 'Z').toLocaleString()}
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={ev.id}
+                    onClick={() => toggleRow(ev.id)}
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="w-8 px-2 py-3 text-center text-gray-400 text-xs select-none">
+                      {expandedId === ev.id ? '▼' : '▶'}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700 max-w-xs truncate">{ev.image}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
+                    <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
+                    <td className="px-4 py-3 text-gray-500">{ev.source}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{(ev.digest || '').slice(0, 12)}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {new Date(ev.created_at + 'Z').toLocaleString()}
+                    </td>
+                  </tr>
+                  {expandedId === ev.id && (
+                    <tr key={`${ev.id}-detail`}>
+                      <td colSpan={7} className="p-0">
+                        <EventDetail ev={ev} />
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))
             )}
           </tbody>
