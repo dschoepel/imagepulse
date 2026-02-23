@@ -13,13 +13,18 @@ export async function sendNtfy({ title, body, tags = [], priority = 3 }) {
 
   if (!topic) throw new Error('NTFY_TOPIC is not configured');
 
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+    'Content-Type': 'text/plain',
+    'Title':    title,
+    'Tags':     tags.join(','),
+    'Priority': String(priority),
+  };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${url}/${topic}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ title, message: body, tags, priority }),
+    body,
   });
 
   if (!res.ok) {
