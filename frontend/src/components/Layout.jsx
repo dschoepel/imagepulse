@@ -38,7 +38,7 @@ function Breadcrumb() {
   const { pathname } = useLocation();
   const label = PAGE_LABELS[pathname] ?? '';
   return (
-    <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-2.5 flex items-center gap-2 text-sm shrink-0">
+    <div className="bg-white border-b border-gray-200 px-4 md:px-8 h-14 flex items-center gap-2 text-sm shrink-0">
       <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 transition-colors">
         ImagePulse
       </Link>
@@ -119,7 +119,7 @@ export default function Layout() {
         <div className="px-4 py-4 border-b border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
-            <span className="font-semibold text-white text-lg leading-none">ImagePulse</span>
+            <span className="font-semibold text-white text-lg">ImagePulse</span>
           </div>
           <button onClick={() => setDrawerOpen(false)}
                   className="p-1 text-gray-400 hover:text-white shrink-0" aria-label="Close navigation">
@@ -159,9 +159,9 @@ export default function Layout() {
             </button>
           </div>
         ) : (
-          <div className="border-b border-gray-700 flex items-center gap-2 px-3 py-3">
+          <div className="border-b border-gray-700 flex items-center gap-2 px-3 h-14">
             <img src="/logo.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
-            <span className="font-semibold text-white text-base leading-none flex-1 min-w-0 truncate">
+            <span className="font-semibold text-white text-base flex-1 min-w-0 truncate">
               ImagePulse
             </span>
             <button onClick={toggleCollapsed}
