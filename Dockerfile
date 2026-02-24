@@ -27,5 +27,5 @@ COPY backend/src ./src
 COPY backend/package.json .
 COPY --from=frontend-build /app/frontend/dist ./public
 ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 3579
 CMD ["node", "src/index.js"]

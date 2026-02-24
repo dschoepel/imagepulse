@@ -25,17 +25,24 @@ router.post('/', async (req, res) => {
     // Build notification content
     const title = `Image updated: ${event.image}:${event.tag}`;
     const digestShort = (event.digest || '').slice(0, 12);
-    let body = `Status: ${event.status}`;
-    if (digestShort) body += `\nDigest: ${digestShort}`;
-    if (event.rawPayload?.platform) body += `\nPlatform: ${event.rawPayload.platform}`;
-    if (releaseNotes?.body) {
-      body += `\n\n${releaseNotes.body.slice(0, 300)}`;
-    }
+    let basebody = `Status: ${event.status}`;
+    if (digestShort) basebody += `\nDigest: ${digestShort}`;
+    if (event.rawPayload?.platform) basebody += `\nPlatform: ${event.rawPayload.platform}`;
+
+    // ntfy body — release notes truncated to 300 chars (push notification limit)
+    const ntfyBody = releaseNotes?.body
+      ? `${basebody}\n\n${releaseNotes.body.slice(0, 300)}`
+      : basebody;
+
+    // Email body — full release notes text
+    const emailBody = releaseNotes?.body
+      ? `${basebody}\n\n${releaseNotes.body}`
+      : basebody;
 
     // Send ntfy notification
     if (getSetting('ntfy_enabled') === 'true') {
       try {
-        await sendNtfy({ title, body, tags: ['whale'], priority: 3 });
+        await sendNtfy({ title, body: ntfyBody, tags: ['whale'], priority: 3 });
       } catch (err) {
         console.error('ntfy notification failed:', err.message);
       }
@@ -44,13 +51,14 @@ router.post('/', async (req, res) => {
     // Send email notification
     if (getSetting('email_enabled') === 'true') {
       try {
-        await sendEmail({ subject: title, text: body });
+        await sendEmail({ subject: title, text: emailBody });
       } catch (err) {
         console.error('Email notification failed:', err.message);
       }
     }
 
-    markNotified(id, title, body, releaseNotes?.url ?? null);
+    // Store the ntfy body in the DB (used for UI display and resend)
+    markNotified(id, title, ntfyBody, releaseNotes?.url ?? null);
 
     // Prune old events if retention is configured
     const retentionDays = parseInt(getSetting('retention_days') || '0', 10);

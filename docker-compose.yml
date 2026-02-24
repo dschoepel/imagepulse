@@ -1,12 +1,70 @@
+# ─────────────────────────────────────────────────────────────────
+# ImagePulse — docker-compose.yml
+# Copy .env.example to .env and set your values before starting.
+# ─────────────────────────────────────────────────────────────────
+
 services:
   imagepulse:
-    build: .
+
+    # ── Image ─────────────────────────────────────────────────────
+    # Pre-built image from GitHub Container Registry (recommended).
+    # Replace 'latest' with a specific version tag to pin the release,
+    # e.g. ghcr.io/dschoepel/imagepulse:1.0.0
+    image: ghcr.io/dschoepel/imagepulse:latest
+    # To build locally from source instead, comment out 'image' above
+    # and uncomment the line below:
+    # build: .
+
+    container_name: imagepulse
+
+    # ── User / permissions ────────────────────────────────────────
+    # Run as your host user so files written to ./data are owned by
+    # you, not root. Set PUID and PGID in .env (run `id` to find them).
+    user: "${PUID:-1000}:${PGID:-1000}"
+
+    # ── Port ──────────────────────────────────────────────────────
+    # Format: "HOST_PORT:CONTAINER_PORT"
+    # Both sides must match PORT in .env (default 3579).
+    # If this container is accessed exclusively through a reverse proxy
+    # on a shared Docker network (see the network section below), you
+    # can remove or comment out this entire 'ports' block — the proxy
+    # will reach ImagePulse via the internal network without a host
+    # port being exposed.
     ports:
-      - "3000:3000"
+      - "${PORT:-3579}:${PORT:-3579}"
+
     volumes:
+      # Persists the SQLite database between container restarts.
+      # Change the host path (left side) if needed; leave the
+      # container path (/app/data) as-is.
       - ./data:/app/data
+
     environment:
       - NODE_ENV=production
+      # Pass the port into the container so the app binds correctly.
+      - PORT=${PORT:-3579}
+      # Timezone — set TZ in .env (e.g. America/New_York)
+      - TZ=${TZ:-UTC}
+
     env_file:
+      # All remaining settings (ntfy, SMTP, GitHub token, retention,
+      # etc.) are loaded from .env. See .env.example for all options.
       - .env
+
     restart: unless-stopped
+
+    # ── Optional: reverse-proxy network ──────────────────────────
+    # If you use a reverse proxy (SWAG, Traefik, Nginx Proxy Manager,
+    # etc.) on a dedicated Docker network, uncomment the 'networks'
+    # blocks below and set PROXY_NETWORK in .env if your network is
+    # named something other than proxy_net.
+    # The proxy will reach ImagePulse by container name + port on the
+    # internal network, so you can also remove the 'ports' block above.
+    #
+    # networks:
+    #   - proxy_net
+
+# networks:
+#   proxy_net:
+#     external: true
+#     name: ${PROXY_NETWORK:-proxy_net}

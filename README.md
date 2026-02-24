@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/dschoepel/imagepulse/main/frontend/public/logo.svg" alt="ImagePulse" height="80" />
+</p>
+
 # ImagePulse
 
 A self-hosted webhook receiver and notification hub for Docker image update events. Receives webhooks from tools like [DIUN](https://crazymax.dev/diun/), fetches GitHub release notes, and sends notifications via ntfy or email.
@@ -12,30 +16,76 @@ A self-hosted webhook receiver and notification hub for Docker image update even
 ## Quick Start
 
 ```bash
-# Clone and install dependencies
-git clone https://github.com/youruser/imagepulse.git
+# Clone the repo
+git clone https://github.com/dschoepel/imagepulse.git
 cd imagepulse
-npm install
 
 # Configure environment
 cp .env.example .env
 # Edit .env with your settings
 
-# Run in development (backend + frontend with hot reload)
-npm run dev
-
-# Or run with Docker
+# Start with Docker Compose
 docker compose up -d
 ```
 
-The app will be available at http://localhost:3000.
+The app will be available at **http://your-host:3579**.
+
+## Docker Compose
+
+The recommended way to run ImagePulse. The pre-built image is pulled from GitHub Container Registry automatically.
+
+```yaml
+services:
+  imagepulse:
+    image: ghcr.io/dschoepel/imagepulse:latest
+    container_name: imagepulse
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${PORT:-3579}:${PORT:-3579}"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT:-3579}
+      - TZ=${TZ:-UTC}
+    env_file:
+      - .env
+    restart: unless-stopped
+```
+
+See the included `docker-compose.yml` for the fully-commented version including the optional reverse-proxy network block.
+
+### Reverse proxy (SWAG, Traefik, NPM)
+
+Put ImagePulse on the same Docker network as your proxy. Uncomment the `networks` section in `docker-compose.yml` and set `PROXY_NETWORK` in `.env` if your network is named something other than `proxy_net`. Once on a shared network the proxy reaches ImagePulse by container name and port; the `ports` block can be removed.
+
+### Firewall
+
+If you expose port 3579 directly (i.e. not behind a reverse proxy), open it in your host firewall:
+
+```bash
+# ufw
+sudo ufw allow 3579/tcp
+
+# firewalld
+sudo firewall-cmd --permanent --add-port=3579/tcp
+sudo firewall-cmd --reload
+
+# iptables
+sudo iptables -A INPUT -p tcp --dport 3579 -j ACCEPT
+```
+
+If your instance is only reachable through a reverse proxy on an internal Docker network you do not need to open the port on the host.
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3000` | HTTP port the server listens on |
-| `NODE_ENV` | `development` | `development` or `production` |
+| `PORT` | `3579` | Port the app listens on inside the container |
+| `NODE_ENV` | `production` | `development` or `production` |
+| `PUID` | `1000` | User ID the container process runs as |
+| `PGID` | `1000` | Group ID the container process runs as |
+| `TZ` | `UTC` | Container timezone (e.g. `America/New_York`) |
 | `DB_PATH` | `./data/imagepulse.db` | Path to the SQLite database file |
 | `NTFY_URL` | `https://ntfy.sh` | ntfy server base URL |
 | `NTFY_TOPIC` | `imagepulse` | ntfy topic to publish to |
@@ -93,7 +143,7 @@ In your DIUN configuration (`diun.yml`), add a webhook notifier pointing to your
 ```yaml
 notif:
   webhook:
-    endpoint: http://your-imagepulse-host:3000/api/webhook
+    endpoint: http://your-imagepulse-host:3579/api/webhook
     method: POST
     headers:
       Content-Type: application/json
@@ -122,7 +172,7 @@ watch:
 
 notif:
   webhook:
-    endpoint: http://imagepulse:3000/api/webhook
+    endpoint: http://imagepulse:3579/api/webhook
     method: POST
     headers:
       Content-Type: application/json
@@ -132,7 +182,23 @@ providers:
     watchStopped: false
 ```
 
-## Docker
+## Development
+
+```bash
+# Install all workspace dependencies from the repo root
+npm install
+
+# Start backend (port 3579) and frontend (port 5173) with hot reload
+npm run dev
+
+# Backend only
+cd backend && npm run dev
+
+# Frontend only (proxies /api to :3579)
+cd frontend && npm run dev
+```
+
+## Building the Docker image locally
 
 ```bash
 # Build
@@ -140,24 +206,8 @@ docker build -t imagepulse .
 
 # Run
 docker run -d \
-  -p 3000:3000 \
+  -p 3579:3579 \
   -v ./data:/app/data \
   --env-file .env \
   imagepulse
-```
-
-Or with Docker Compose:
-
-```bash
-docker compose up -d
-```
-
-## Development
-
-```bash
-# Backend only (port 3000)
-cd backend && npm run dev
-
-# Frontend only (port 5173, proxies /api to :3000)
-cd frontend && npm run dev
 ```
