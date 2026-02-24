@@ -38,6 +38,7 @@ router.post('/', async (req, res) => {
     let basebody = `Status: ${event.status}`;
     if (digestShort) basebody += `\nDigest: ${digestShort}`;
     if (event.rawPayload?.platform) basebody += `\nPlatform: ${event.rawPayload.platform}`;
+    if (event.tag === 'latest' && releaseNotes?.name) basebody += `\nRelease: ${releaseNotes.name}`;
 
     // ntfy body — release notes truncated to 300 chars (push notification limit)
     const ntfyBody = releaseNotes?.body
