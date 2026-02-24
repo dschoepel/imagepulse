@@ -1,8 +1,7 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/dschoepel/imagepulse/main/frontend/public/logo.svg" alt="ImagePulse" height="80" />
+<p align="left">
+  <img src="https://raw.githubusercontent.com/dschoepel/imagepulse/main/frontend/public/logo.svg" alt="ImagePulse logo featuring a stylized heartbeat or pulse waveform integrated with container or monitoring imagery on a clean background" height="80" />
+  <strong style="font-size:2rem; vertical-align:middle; margin-left:16px;">ImagePulse</strong>
 </p>
-
-# ImagePulse
 
 A self-hosted webhook receiver and notification hub for Docker image update events. Receives webhooks from tools like [DIUN](https://crazymax.dev/diun/), fetches GitHub release notes, and sends notifications via ntfy or email.
 
