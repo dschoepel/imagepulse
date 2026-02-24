@@ -187,7 +187,7 @@ notif:
       Content-Type: application/json
 ```
 
-ImagePulse auto-detects the webhook source from the payload shape. No additional authentication is required for the webhook endpoint (place ImagePulse behind a reverse proxy if you need access control).
+ImagePulse auto-detects the webhook source from the payload shape. Authentication is optional — configure a shared secret in **Settings → Webhook Security** (or via `WEBHOOK_SECRET`) to require an `Authorization: Bearer <secret>` header on all incoming webhooks.
 
 A minimal DIUN `docker-compose.yml` alongside ImagePulse:
 

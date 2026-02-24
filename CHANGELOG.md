@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.0] — 2026-02-24
+
+### Added
+
+- **Webhook shared-secret authentication** — optional `Authorization: Bearer <secret>` guard on `POST /api/webhook`; configure via **Settings → Webhook Security** or the `WEBHOOK_SECRET` environment variable; requests without a valid token are rejected with `401 Unauthorized`; leaving the secret blank keeps the endpoint open (backwards compatible)
+- **Webhook Security settings section** — shared-secret field with a **Generate** button (cryptographically random 48-hex-char secret), masked input, and a ready-to-paste DIUN config snippet that appears once a secret is set
+- **Mapping validation** — adding or editing a repo mapping now validates both fields inline before saving:
+  - *Docker image*: client-side format check (must include at least one `/`, no whitespace)
+  - *GitHub repo*: calls the new `GET /api/settings/validate-mapping` backend endpoint which queries the GitHub API; definitive 404 blocks the save (red highlight); rate-limit or network errors show an amber warning but still allow saving; uses `GITHUB_TOKEN` when configured
+  - Validation fires on field blur and again on submit; fields show red/amber border with error text below; Add/Save buttons disabled while the GitHub check is in flight
+  - Inline add-mapping form on the Events page applies the same repo validation
+
+### Changed
+
+- **README Webhook Setup** — updated to describe the optional shared-secret authentication
+- **`WEBHOOK_SECRET` env var** — added to `.env.example` and the README environment variables table
+
+---
+
 ## [1.2.2] — 2026-02-24
 
 ### Changed
