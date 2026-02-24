@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.2] — 2026-02-24
+
+### Changed
+
+- **`env_file` guidance** — added comments to `docker-compose.yml` and the README snippet explaining when to comment out `env_file` (Portainer, Rancher, and other container managers that inject env vars directly via UI)
+- **README Docker Compose snippet** — synced to match `docker-compose.yml`; added inline note on the `user:` field pointing to `id` for PUID/PGID values
+
+### Fixed
+
+- **`backend/package.json` version** — backend workspace was stuck at `1.0.0`; all four package files (`package.json`, `backend/package.json`, `frontend/package.json`, `package-lock.json`) are now kept in sync
+
+---
+
 ## [1.2.1] — 2026-02-24
 
 ### Added
