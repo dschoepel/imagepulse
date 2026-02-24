@@ -173,7 +173,8 @@ export function seedSettingsFromEnv() {
     smtp_pass:     process.env.SMTP_PASS,
     email_from:    process.env.EMAIL_FROM,
     email_to:      process.env.EMAIL_TO,
-    retention_days: process.env.RETENTION_DAYS,
+    retention_days:  process.env.RETENTION_DAYS,
+    webhook_secret:  process.env.WEBHOOK_SECRET,
   };
   const stmt = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   const run = db.transaction(() => {

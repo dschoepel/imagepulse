@@ -9,6 +9,16 @@ const router = Router();
 
 router.post('/', async (req, res) => {
   try {
+    // Validate shared secret if one is configured
+    const secret = getSetting('webhook_secret');
+    if (secret) {
+      const auth = req.headers['authorization'] || '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+      if (token !== secret) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+      }
+    }
+
     const event = parseWebhook(req);
     const id = insertEvent(event);
 

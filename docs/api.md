@@ -23,6 +23,16 @@ Receives an image-update webhook, stores the event, fetches GitHub release notes
 
 Auto-detects the webhook source from the payload shape. Currently supports **DIUN**.
 
+**Authentication (optional):**
+
+If a `webhook_secret` is configured in Settings (or via the `WEBHOOK_SECRET` environment variable), every request must include:
+
+```
+Authorization: Bearer <secret>
+```
+
+Requests without a valid token are rejected with `401 Unauthorized`. If no secret is configured, all requests are accepted.
+
 **Request body** — DIUN flat payload:
 
 ```json
@@ -245,6 +255,7 @@ Upserts one or more settings. Only the keys present in the request body are upda
 | `email_from` | Sender address |
 | `email_to` | Recipient address |
 | `retention_days` | Days to keep events; `"0"` = keep forever |
+| `webhook_secret` | Shared secret for webhook Bearer-token auth; empty string disables auth |
 
 **Response `200`:**
 
@@ -291,6 +302,39 @@ Sends a test email using the currently-stored SMTP settings.
 ## Mappings
 
 Mappings link a Docker image name to a GitHub `owner/repo`. When a webhook arrives for a mapped image, ImagePulse fetches release notes from the GitHub Releases API.
+
+### `GET /api/settings/validate-mapping`
+
+Validates a GitHub repository string against the GitHub API. Used by the UI to provide inline feedback when adding or editing mappings.
+
+**Query parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `repo` | yes | Repository in `owner/repo` format |
+
+**Response `200`:**
+
+```json
+{ "ok": true, "repoExists": true }
+```
+
+| `repoExists` value | Meaning |
+|--------------------|---------|
+| `true` | Repository found on GitHub |
+| `false` | Repository not found (definitive 404) — `repoError` contains the message |
+| `null` | Could not verify (rate-limited or network error) — `repoError` contains the message; treat as a soft warning and allow the save |
+
+```json
+{ "ok": true, "repoExists": false, "repoError": "Repository not found on GitHub" }
+{ "ok": true, "repoExists": null,  "repoError": "GitHub API rate limit exceeded — cannot verify" }
+```
+
+**Notes:**
+- Uses `GITHUB_TOKEN` if configured (increases rate limit from 60 to 5 000 req/hr).
+- Format validation (`owner/repo` with exactly one `/`) is done before the API call; an invalid format returns `repoExists: false` immediately without a network request.
+
+---
 
 ### `GET /api/settings/mappings`
 

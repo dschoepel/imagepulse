@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import fetch from 'node-fetch';
 import { getDb } from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
@@ -69,6 +70,41 @@ router.post('/test-email', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- Repo validation ---
+
+router.get('/validate-mapping', async (req, res) => {
+  const { repo } = req.query;
+  if (!repo) {
+    return res.status(400).json({ ok: false, error: 'repo query parameter is required' });
+  }
+
+  const parts = repo.split('/');
+  if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+    return res.json({ ok: true, repoExists: false, repoError: 'Must be in owner/repo format (e.g. nginx/nginx)' });
+  }
+
+  try {
+    const headers = { 'User-Agent': 'ImagePulse/1.0' };
+    if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+    }
+    const ghRes = await fetch(`https://api.github.com/repos/${repo}`, { headers });
+
+    if (ghRes.ok) {
+      return res.json({ ok: true, repoExists: true });
+    }
+    if (ghRes.status === 404) {
+      return res.json({ ok: true, repoExists: false, repoError: 'Repository not found on GitHub' });
+    }
+    if (ghRes.headers.get('x-ratelimit-remaining') === '0') {
+      return res.json({ ok: true, repoExists: null, repoError: 'GitHub API rate limit exceeded — cannot verify' });
+    }
+    return res.json({ ok: true, repoExists: null, repoError: `GitHub returned ${ghRes.status} — cannot verify` });
+  } catch {
+    return res.json({ ok: true, repoExists: null, repoError: 'Could not reach GitHub' });
   }
 });
 

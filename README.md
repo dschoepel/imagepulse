@@ -136,6 +136,7 @@ If your instance is only reachable through a reverse proxy on an internal Docker
 | `EMAIL_TO` | *(empty)* | Recipient address |
 | `GITHUB_TOKEN` | *(empty)* | GitHub PAT for fetching release notes (increases rate limit) |
 | `RETENTION_DAYS` | `90` | Days to keep events (0 = keep forever) |
+| `WEBHOOK_SECRET` | *(empty)* | Shared secret — requires `Authorization: Bearer <secret>` on all incoming webhooks; leave blank to allow unauthenticated requests |
 
 ## Mappings
 

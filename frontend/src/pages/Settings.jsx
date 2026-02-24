@@ -121,12 +121,23 @@ export default function Settings() {
     );
   }
 
+  const [webhookStatus, setWebhookStatus] = useState(null);
+
+  function generateSecret() {
+    const array = new Uint8Array(24);
+    crypto.getRandomValues(array);
+    const secret = Array.from(array).map((b) => b.toString(16).padStart(2, '0')).join('');
+    set('webhook_secret', secret);
+    setWebhookStatus(null);
+  }
+
   const ntfyKeys = ['ntfy_enabled', 'ntfy_url', 'ntfy_topic', 'ntfy_token'];
   const emailKeys = [
     'email_enabled', 'smtp_host', 'smtp_port', 'smtp_secure',
     'smtp_user', 'smtp_pass', 'email_from', 'email_to',
   ];
   const retentionKeys = ['retention_days'];
+  const webhookKeys = ['webhook_secret'];
 
   return (
     <div className="space-y-4 max-w-xl">
@@ -197,6 +208,54 @@ export default function Settings() {
             Send test
           </button>
           <StatusMsg status={emailStatus} />
+        </div>
+      </Section>
+
+      {/* Webhook Security */}
+      <Section title="Webhook Security">
+        <p className="text-xs text-gray-500">
+          Set a shared secret to require an <code className="bg-gray-100 px-1 rounded">Authorization: Bearer &lt;secret&gt;</code> header
+          on all incoming webhooks. Leave blank to allow unauthenticated requests.
+        </p>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-600">Shared Secret</label>
+          <div className="flex items-center gap-2 w-full max-w-sm">
+            <input
+              type="password"
+              value={s.webhook_secret ?? ''}
+              onChange={(e) => { set('webhook_secret', e.target.value); setWebhookStatus(null); }}
+              placeholder="leave blank to disable"
+              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full font-mono"
+            />
+            <button
+              type="button"
+              onClick={generateSecret}
+              className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+            >
+              Generate
+            </button>
+          </div>
+        </div>
+        {s.webhook_secret && (
+          <div className="mt-1">
+            <p className="text-xs font-medium text-gray-600 mb-1">DIUN config snippet:</p>
+            <pre className="text-xs bg-gray-900 text-green-300 rounded p-3 overflow-x-auto">{`notif:
+  webhook:
+    endpoint: https://your-imagepulse-host/api/webhook
+    method: POST
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer ${s.webhook_secret}"`}</pre>
+          </div>
+        )}
+        <div className="flex gap-3 items-center flex-wrap">
+          <button
+            onClick={() => saveSection(webhookKeys, setWebhookStatus)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700"
+          >
+            Save
+          </button>
+          <StatusMsg status={webhookStatus} />
         </div>
       </Section>
 

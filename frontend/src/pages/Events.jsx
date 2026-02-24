@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api.js';
+import { apiFetch, validateRepo } from '../api.js';
 
 function StatusBadge({ status }) {
   const colours = {
@@ -39,10 +39,39 @@ function RawPayload({ raw }) {
 function AddMappingInline({ image, onAdded }) {
   const [repo, setRepo] = useState('');
   const [status, setStatus] = useState(null);
+  const [repoError, setRepoError] = useState(null);
+  const [repoChecking, setRepoChecking] = useState(false);
+
+  async function checkRepoInline(value) {
+    const v = value.trim();
+    if (!v) { setRepoError({ message: 'Required', isWarning: false }); return false; }
+    if (!/^[a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-]+$/.test(v)) {
+      setRepoError({ message: 'Must be owner/repo format', isWarning: false });
+      return false;
+    }
+    setRepoChecking(true);
+    setRepoError(null);
+    try {
+      const d = await validateRepo(v);
+      if (d.repoExists === true) { setRepoError(null); return true; }
+      if (d.repoExists === false) {
+        setRepoError({ message: d.repoError || 'Repository not found on GitHub', isWarning: false });
+        return false;
+      }
+      setRepoError({ message: d.repoError || 'Could not verify repo', isWarning: true });
+      return true;
+    } catch {
+      setRepoError({ message: 'Could not reach GitHub', isWarning: true });
+      return true;
+    } finally {
+      setRepoChecking(false);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!repo.trim()) return;
+    const ok = await checkRepoInline(repo);
+    if (!ok) return;
     setStatus({ pending: true });
     try {
       await apiFetch('/settings/mappings', {
@@ -57,23 +86,35 @@ function AddMappingInline({ image, onAdded }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-0.5">
-      <input
-        type="text"
-        value={repo}
-        onChange={(e) => setRepo(e.target.value)}
-        placeholder="owner/repo"
-        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36"
-      />
-      <button
-        type="submit"
-        disabled={status?.pending || !repo.trim()}
-        className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
-      >
-        {status?.pending ? 'Saving…' : 'Add'}
-      </button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-1 mt-0.5">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={repo}
+          onChange={(e) => { setRepo(e.target.value); setRepoError(null); }}
+          onBlur={() => { if (repo.trim()) checkRepoInline(repo); }}
+          placeholder="owner/repo"
+          className={`border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36 ${
+            repoError
+              ? repoError.isWarning ? 'border-amber-400' : 'border-red-400'
+              : 'border-gray-300'
+          }`}
+        />
+        <button
+          type="submit"
+          disabled={status?.pending || repoChecking || !repo.trim()}
+          className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {repoChecking ? 'Checking…' : status?.pending ? 'Saving…' : 'Add'}
+        </button>
+      </div>
+      {repoChecking ? null : repoError && (
+        <p className={`text-xs ${repoError.isWarning ? 'text-amber-600' : 'text-red-600'}`}>
+          {repoError.message}
+        </p>
+      )}
       {status?.ok === false && (
-        <span className="text-xs text-red-600">{status.msg}</span>
+        <p className="text-xs text-red-600">{status.msg}</p>
       )}
     </form>
   );
