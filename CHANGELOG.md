@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.1] — 2026-02-24
+
+### Added
+
+- **API reference** — `docs/api.md` documents all 13 endpoints (webhook, events, settings, mappings) with request/response shapes, query parameters, error codes, and behavioural notes
+
+---
+
 ## [1.2.0] — 2026-02-24
 
 ### Added
