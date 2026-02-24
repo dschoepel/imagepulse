@@ -12,8 +12,8 @@ export default function Layout() {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-56 bg-gray-900 text-white flex flex-col">
-        <div className="px-6 py-5 text-xl font-bold tracking-tight border-b border-gray-700">
-          ImagePulse
+        <div className="px-4 py-5 border-b border-gray-700 flex items-center">
+          <img src="/logo.svg" alt="ImagePulse" className="h-10 w-auto" />
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map(({ to, label }) => (

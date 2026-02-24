@@ -7,6 +7,9 @@ export default function Mappings() {
   const [newRepo, setNewRepo] = useState('');
   const [addError, setAddError] = useState(null);
   const [error, setError] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editImage, setEditImage] = useState('');
+  const [editRepo, setEditRepo] = useState('');
 
   function load() {
     apiFetch('/settings/mappings')
@@ -39,6 +42,31 @@ export default function Mappings() {
   async function handleDelete(image) {
     try {
       await apiFetch(`/settings/mappings/${encodeURIComponent(image)}`, { method: 'DELETE' });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function startEdit(m) {
+    setEditingId(m.id);
+    setEditImage(m.image);
+    setEditRepo(m.repo);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditImage('');
+    setEditRepo('');
+  }
+
+  async function handleSave(oldImage) {
+    try {
+      await apiFetch(`/settings/mappings/${encodeURIComponent(oldImage)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ newImage: editImage.trim(), repo: editRepo.trim() }),
+      });
+      cancelEdit();
       load();
     } catch (err) {
       setError(err.message);
@@ -101,20 +129,63 @@ export default function Mappings() {
                 </td>
               </tr>
             ) : (
-              mappings.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{m.image}</td>
-                  <td className="px-4 py-3 text-gray-700">{m.repo}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(m.image)}
-                      className="text-red-500 hover:text-red-700 text-xs font-medium"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
+              mappings.map((m) =>
+                editingId === m.id ? (
+                  <tr key={m.id} className="bg-indigo-50">
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={editImage}
+                        onChange={(e) => setEditImage(e.target.value)}
+                        className="border border-indigo-300 rounded px-2 py-1 text-xs font-mono w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={editRepo}
+                        onChange={(e) => setEditRepo(e.target.value)}
+                        className="border border-indigo-300 rounded px-2 py-1 text-xs w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => handleSave(m.image)}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs font-medium mr-3"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="text-gray-500 hover:text-gray-700 text-xs font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={m.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{m.image}</td>
+                    <td className="px-4 py-3 text-gray-700">{m.repo}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => startEdit(m)}
+                        disabled={editingId !== null}
+                        className="text-indigo-500 hover:text-indigo-700 text-xs font-medium mr-3 disabled:opacity-40"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(m.image)}
+                        disabled={editingId !== null}
+                        className="text-red-500 hover:text-red-700 text-xs font-medium disabled:opacity-40"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                )
+              )
             )}
           </tbody>
         </table>

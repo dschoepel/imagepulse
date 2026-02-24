@@ -44,6 +44,7 @@ export function initDb() {
 
   try { db.exec('ALTER TABLE events ADD COLUMN notification_title TEXT'); } catch {}
   try { db.exec('ALTER TABLE events ADD COLUMN notification_body TEXT'); } catch {}
+  try { db.exec('ALTER TABLE events ADD COLUMN github_release_url TEXT'); } catch {}
 
   return db;
 }
@@ -64,10 +65,31 @@ export function insertEvent({ image, tag, digest, status, source, rawPayload }) 
   return result.lastInsertRowid;
 }
 
-export function markNotified(id, notificationTitle, notificationBody) {
+export function markNotified(id, notificationTitle, notificationBody, githubReleaseUrl) {
   db.prepare(`UPDATE events SET notified_at = datetime('now'),
-    notification_title = ?, notification_body = ? WHERE id = ?`)
-    .run(notificationTitle ?? null, notificationBody ?? null, id);
+    notification_title = ?, notification_body = ?, github_release_url = ? WHERE id = ?`)
+    .run(notificationTitle ?? null, notificationBody ?? null, githubReleaseUrl ?? null, id);
+}
+
+export function getEventById(id) {
+  return db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+}
+
+export function getChartData() {
+  const eventsPerDay = db.prepare(`
+    SELECT date(created_at) as day, COUNT(*) as count
+    FROM events
+    WHERE created_at >= datetime('now', '-14 days')
+    GROUP BY day ORDER BY day ASC
+  `).all();
+
+  const topImages = db.prepare(`
+    SELECT image, COUNT(*) as count
+    FROM events
+    GROUP BY image ORDER BY count DESC LIMIT 10
+  `).all();
+
+  return { eventsPerDay, topImages };
 }
 
 export function getEvents({ page = 1, limit = 25, image = '', status = '' } = {}) {

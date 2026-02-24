@@ -37,11 +37,23 @@ function RawPayload({ raw }) {
 }
 
 function EventDetail({ ev }) {
+  const [resendStatus, setResendStatus] = useState(null);
+
   let platform = '—';
   try {
     const p = JSON.parse(ev.raw_payload);
     if (p?.platform) platform = p.platform;
   } catch {}
+
+  async function handleResend() {
+    setResendStatus({ pending: true });
+    try {
+      await apiFetch(`/events/${ev.id}/resend`, { method: 'POST' });
+      setResendStatus({ ok: true, msg: 'Notification resent' });
+    } catch (e) {
+      setResendStatus({ ok: false, msg: e.message });
+    }
+  }
 
   return (
     <div className="bg-indigo-50 px-6 py-4 text-sm">
@@ -79,9 +91,35 @@ function EventDetail({ ev }) {
                 {ev.notified_at ? new Date(ev.notified_at + 'Z').toLocaleString() : '—'}
               </dd>
             </div>
+            <div className="flex gap-2">
+              <dt className="text-gray-500 w-24 shrink-0">Release</dt>
+              <dd>
+                {ev.github_release_url
+                  ? <a href={ev.github_release_url} target="_blank" rel="noreferrer"
+                       className="text-indigo-600 hover:underline text-xs">View on GitHub ↗</a>
+                  : <span className="text-gray-400">—</span>}
+              </dd>
+            </div>
           </dl>
         </div>
       </div>
+
+      {ev.notification_title && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={handleResend}
+            disabled={resendStatus?.pending}
+            className="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {resendStatus?.pending ? 'Resending…' : 'Resend Notification'}
+          </button>
+          {resendStatus && !resendStatus.pending && (
+            <span className={`text-xs font-medium ${resendStatus.ok ? 'text-green-600' : 'text-red-600'}`}>
+              {resendStatus.msg}
+            </span>
+          )}
+        </div>
+      )}
 
       {ev.raw_payload && <RawPayload raw={ev.raw_payload} />}
     </div>

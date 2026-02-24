@@ -98,6 +98,27 @@ router.put('/mappings', (req, res) => {
   }
 });
 
+router.patch('/mappings/:image', (req, res) => {
+  try {
+    const { newImage, repo } = req.body;
+    const oldImage = req.params.image;
+    if (!repo) return res.status(400).json({ ok: false, error: 'repo is required' });
+    const db = getDb();
+    const update = db.transaction(() => {
+      if (newImage && newImage !== oldImage) {
+        db.prepare('DELETE FROM mappings WHERE image = ?').run(oldImage);
+        db.prepare('INSERT OR REPLACE INTO mappings (image, repo) VALUES (?, ?)').run(newImage, repo);
+      } else {
+        db.prepare('UPDATE mappings SET repo = ? WHERE image = ?').run(repo, oldImage);
+      }
+    });
+    update();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 router.delete('/mappings/:image', (req, res) => {
   try {
     const db = getDb();
