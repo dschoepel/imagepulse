@@ -92,7 +92,9 @@ export function getChartData() {
   return { eventsPerDay, topImages };
 }
 
-export function getEvents({ page = 1, limit = 25, image = '', status = '' } = {}) {
+const ALLOWED_SORT_COLS = new Set(['image', 'tag', 'status', 'source', 'created_at']);
+
+export function getEvents({ page = 1, limit = 25, image = '', status = '', sortBy = 'created_at', sortDir = 'desc' } = {}) {
   const offset = (page - 1) * limit;
   const conditions = [];
   const params = [];
@@ -106,11 +108,13 @@ export function getEvents({ page = 1, limit = 25, image = '', status = '' } = {}
     params.push(status);
   }
 
+  const col = ALLOWED_SORT_COLS.has(sortBy) ? sortBy : 'created_at';
+  const dir = sortDir === 'asc' ? 'ASC' : 'DESC';
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   params.push(limit, offset);
 
   return db
-    .prepare(`SELECT * FROM events ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+    .prepare(`SELECT * FROM events ${where} ORDER BY ${col} ${dir} LIMIT ? OFFSET ?`)
     .all(...params);
 }
 

@@ -30,8 +30,10 @@ router.get('/', (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '25', 10)));
     const image = req.query.image || '';
     const status = req.query.status || '';
+    const sortBy = req.query.sortBy || 'created_at';
+    const sortDir = req.query.sortDir || 'desc';
 
-    const events = getEvents({ page, limit, image, status });
+    const events = getEvents({ page, limit, image, status, sortBy, sortDir });
     const total = getEventCount({ image, status });
     const pages = Math.ceil(total / limit) || 1;
 

@@ -182,12 +182,28 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
   );
 }
 
+function SortHeader({ label, col, sortBy, sortDir, onSort, className }) {
+  const active = sortBy === col;
+  return (
+    <th className={`cursor-pointer select-none ${className}`} onClick={() => onSort(col)}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className={active ? 'text-indigo-500' : 'text-gray-300'}>
+          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </span>
+    </th>
+  );
+}
+
 export default function Events() {
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [page, setPage] = useState(1);
   const [image, setImage] = useState('');
   const [status, setStatus] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -205,7 +221,7 @@ export default function Events() {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ page, limit: 25 });
+    const params = new URLSearchParams({ page, limit: 25, sortBy, sortDir });
     if (image) params.set('image', image);
     if (status) params.set('status', status);
 
@@ -217,9 +233,20 @@ export default function Events() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, image, status]);
+  }, [page, image, status, sortBy, sortDir]);
 
   function handleFilterChange() {
+    setPage(1);
+    setExpandedId(null);
+  }
+
+  function handleSort(col) {
+    if (sortBy === col) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(col);
+      setSortDir('asc');
+    }
     setPage(1);
     setExpandedId(null);
   }
@@ -278,12 +305,12 @@ export default function Events() {
           <thead className="bg-gray-50">
             <tr>
               <th className="w-8 px-2 py-3" />
-              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Image</th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Tag</th>
-              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Status</th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Source</th>
+              <SortHeader label="Image"  col="image"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs" />
+              <SortHeader label="Tag"    col="tag"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs" />
+              <SortHeader label="Status" col="status"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs" />
+              <SortHeader label="Source" col="source"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs" />
               <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Digest</th>
-              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Time</th>
+              <SortHeader label="Time"   col="created_at" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
