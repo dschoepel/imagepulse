@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.2] — 2026-02-24
+
+### Fixed
+
+- **`latest` tag — no release notes fetched** — when DIUN reports a Docker image with the `latest` tag, the GitHub tag-lookup (`/releases/tags/latest`) always returned 404. ImagePulse now calls `GET /repos/{owner}/{repo}/releases/latest` instead, returning the most recently published release — the logical equivalent of what `latest` points to.
+
+---
+
 ## [1.3.1] — 2026-02-24
 
 ### Changed
