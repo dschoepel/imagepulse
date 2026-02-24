@@ -56,7 +56,7 @@ function EventDetail({ ev }) {
   }
 
   return (
-    <div className="bg-indigo-50 px-6 py-4 text-sm">
+    <div className="bg-indigo-50 px-4 py-4 sm:px-6 text-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left — Notification sent */}
         <div>
@@ -186,7 +186,7 @@ export default function Events() {
           placeholder="Filter by image…"
           value={image}
           onChange={(e) => { setImage(e.target.value); handleFilterChange(); }}
-          className="border border-gray-300 rounded-md px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
         <select
           value={status}
@@ -207,11 +207,12 @@ export default function Events() {
           <thead className="bg-gray-50">
             <tr>
               <th className="w-8 px-2 py-3" />
-              {['Image', 'Tag', 'Status', 'Source', 'Digest', 'Time'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">
-                  {h}
-                </th>
-              ))}
+              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Image</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Tag</th>
+              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Status</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Source</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Digest</th>
+              <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Time</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -234,12 +235,12 @@ export default function Events() {
                     <td className="w-8 px-2 py-3 text-center text-gray-400 text-xs select-none">
                       {expandedId === ev.id ? '▼' : '▶'}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700 max-w-xs truncate">{ev.image}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
-                    <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
-                    <td className="px-4 py-3 text-gray-500">{ev.source}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{(ev.digest || '').slice(0, 12)}</td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-2 sm:px-4 py-3 font-mono text-xs text-gray-700 max-w-[80px] sm:max-w-xs truncate">{ev.image}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
+                    <td className="px-2 sm:px-4 py-3"><StatusBadge status={ev.status} /></td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-gray-500">{ev.source}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-400">{(ev.digest || '').slice(0, 12)}</td>
+                    <td className="px-2 sm:px-4 py-3 text-gray-500 whitespace-nowrap">
                       {new Date(ev.created_at + 'Z').toLocaleString()}
                     </td>
                   </tr>

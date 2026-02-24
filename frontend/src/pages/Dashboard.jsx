@@ -34,7 +34,7 @@ function EventModal({ ev, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full z-50"
+        className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 z-50"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
@@ -148,11 +148,11 @@ export default function Dashboard() {
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {['Image', 'Tag', 'Status', 'Source', 'Time'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">
-                    {h}
-                  </th>
-                ))}
+                <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Image</th>
+                <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Tag</th>
+                <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Status</th>
+                <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Source</th>
+                <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -169,11 +169,11 @@ export default function Dashboard() {
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => setSelectedEvent(ev)}
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700 max-w-xs truncate">{ev.image}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
-                    <td className="px-4 py-3"><StatusBadge status={ev.status} /></td>
-                    <td className="px-4 py-3 text-gray-500">{ev.source}</td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-2 sm:px-4 py-3 font-mono text-xs text-gray-700 max-w-[100px] sm:max-w-xs truncate">{ev.image}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
+                    <td className="px-2 sm:px-4 py-3"><StatusBadge status={ev.status} /></td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-gray-500">{ev.source}</td>
+                    <td className="px-2 sm:px-4 py-3 text-gray-500 whitespace-nowrap">
                       {new Date(ev.created_at + 'Z').toLocaleString()}
                     </td>
                   </tr>

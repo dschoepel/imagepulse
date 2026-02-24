@@ -79,7 +79,7 @@ export default function Mappings() {
 
       {/* Add form */}
       <form onSubmit={handleAdd} className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-end">
-        <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+        <div className="flex flex-col gap-1 flex-1 min-w-0 w-full sm:min-w-[180px]">
           <label className="text-xs font-medium text-gray-600">Docker image</label>
           <input
             type="text"
@@ -89,7 +89,7 @@ export default function Mappings() {
             className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
+        <div className="flex flex-col gap-1 flex-1 min-w-0 w-full sm:min-w-[160px]">
           <label className="text-xs font-medium text-gray-600">GitHub repo (owner/repo)</label>
           <input
             type="text"
@@ -110,7 +110,7 @@ export default function Mappings() {
 
       {error && <p className="text-red-600 text-sm">Error: {error}</p>}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>

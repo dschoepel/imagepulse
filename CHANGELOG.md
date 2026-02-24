@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.1.0] — 2026-02-23
+
+### Added
+
+- **Collapsible desktop sidebar** — chevron toggle at the bottom of the sidebar shrinks it to a 56px icon rail; expanded/collapsed state is persisted in `localStorage` across page reloads
+- **Mobile overlay drawer** — hamburger button in the fixed top bar slides in a full-height nav drawer from the left; closes on link tap, backdrop click, or X button
+- **Heroicons** (`@heroicons/react`) — icon added to each nav item (Dashboard, Events, Mappings, Settings); icons render in both desktop and mobile nav
+- **CSS tooltips in icon-rail mode** — hovering a collapsed sidebar icon shows a floating label to the right without any JS
+
+### Changed
+
+- **Dashboard** — Recent Events table hides Tag and Source columns on mobile (`< sm`); cell padding reduced on narrow screens; EventModal inner card gains `mx-4` so it never touches screen edges on mobile
+- **Events** — filter input grows to full width on mobile; Events table hides Tag, Source, and Digest columns on mobile; EventDetail expanded row uses tighter horizontal padding on mobile (`px-4 sm:px-6`)
+- **Mappings** — Add-mapping form fields stack full width on mobile; table wrapper gains `overflow-x-auto` so the table scrolls horizontally on very narrow screens instead of breaking layout
+- **Settings** — field input wrappers use `w-full max-w-sm` so inputs fill available width on mobile rather than being clipped
+
+---
+
 ## [1.0.0] — 2026-02-24
 
 First public release.

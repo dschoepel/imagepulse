@@ -25,7 +25,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, secret = fa
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-medium text-gray-600">{label}</label>
-      <div className="flex items-center gap-2 max-w-sm">
+      <div className="flex items-center gap-2 w-full max-w-sm">
         <input
           type={inputType}
           value={value}
