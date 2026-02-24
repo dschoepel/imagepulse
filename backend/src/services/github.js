@@ -24,7 +24,19 @@ export async function fetchReleaseNotes(repo, tag) {
       return { name: data.name, body: data.body, url: data.html_url };
     }
 
-    // Fall back to listing releases and matching by tag_name
+    // Try with a 'v' prefix if the tag doesn't already have one
+    if (directRes.status === 404 && !tag.startsWith('v')) {
+      const vRes = await fetch(
+        `https://api.github.com/repos/${repo}/releases/tags/v${tag}`,
+        { headers }
+      );
+      if (vRes.ok) {
+        const data = await vRes.json();
+        return { name: data.name, body: data.body, url: data.html_url };
+      }
+    }
+
+    // Fall back to listing releases and matching by tag_name (with or without v prefix)
     if (directRes.status === 404) {
       const listRes = await fetch(
         `https://api.github.com/repos/${repo}/releases`,
@@ -32,7 +44,9 @@ export async function fetchReleaseNotes(repo, tag) {
       );
       if (!listRes.ok) return null;
       const releases = await listRes.json();
-      const match = releases.find((r) => r.tag_name === tag);
+      const match = releases.find(
+        (r) => r.tag_name === tag || r.tag_name === `v${tag}`
+      );
       if (!match) return null;
       return { name: match.name, body: match.body, url: match.html_url };
     }
