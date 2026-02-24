@@ -124,16 +124,18 @@ If your instance is only reachable through a reverse proxy on an internal Docker
 | `PGID` | `1000` | Group ID the container process runs as |
 | `TZ` | `UTC` | Container timezone (e.g. `America/New_York`) |
 | `DB_PATH` | `./data/imagepulse.db` | Path to the SQLite database file |
+| `NTFY_ENABLED` | `false` | Set `true` to enable ntfy notifications on first run |
 | `NTFY_URL` | `https://ntfy.sh` | ntfy server base URL |
 | `NTFY_TOPIC` | `imagepulse` | ntfy topic to publish to |
 | `NTFY_TOKEN` | *(empty)* | ntfy access token (if required) |
+| `EMAIL_ENABLED` | `false` | Set `true` to enable email notifications on first run |
 | `SMTP_HOST` | *(empty)* | SMTP server hostname |
 | `SMTP_PORT` | `587` | SMTP server port |
 | `SMTP_SECURE` | `false` | Use TLS (`true`) or STARTTLS (`false`) |
 | `SMTP_USER` | *(empty)* | SMTP username |
 | `SMTP_PASS` | *(empty)* | SMTP password |
 | `EMAIL_FROM` | *(empty)* | Sender address |
-| `EMAIL_TO` | *(empty)* | Recipient address |
+| `EMAIL_TO` | *(empty)* | Recipient address — comma-separated for multiple recipients |
 | `GITHUB_TOKEN` | *(empty)* | GitHub PAT for fetching release notes (increases rate limit) |
 | `RETENTION_DAYS` | `90` | Days to keep events (0 = keep forever) |
 | `WEBHOOK_SECRET` | *(empty)* | Shared secret — requires `Authorization: Bearer <secret>` on all incoming webhooks; leave blank to allow unauthenticated requests |

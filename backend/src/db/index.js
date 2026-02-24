@@ -163,9 +163,11 @@ export function getAllSettings() {
 
 export function seedSettingsFromEnv() {
   const mapping = {
+    ntfy_enabled:  process.env.NTFY_ENABLED,
     ntfy_url:      process.env.NTFY_URL,
     ntfy_topic:    process.env.NTFY_TOPIC,
     ntfy_token:    process.env.NTFY_TOKEN,
+    email_enabled: process.env.EMAIL_ENABLED,
     smtp_host:     process.env.SMTP_HOST,
     smtp_port:     process.env.SMTP_PORT,
     smtp_secure:   process.env.SMTP_SECURE,

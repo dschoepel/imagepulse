@@ -193,7 +193,7 @@ export default function Settings() {
         <Field label="SMTP Username" value={s.smtp_user ?? ''} onChange={(v) => set('smtp_user', v)} />
         <Field label="SMTP Password" secret value={s.smtp_pass ?? ''} onChange={(v) => set('smtp_pass', v)} />
         <Field label="From" value={s.email_from ?? ''} onChange={(v) => set('email_from', v)} placeholder="noreply@example.com" />
-        <Field label="To" value={s.email_to ?? ''} onChange={(v) => set('email_to', v)} placeholder="you@example.com" />
+        <Field label="To (comma-separated for multiple)" value={s.email_to ?? ''} onChange={(v) => set('email_to', v)} placeholder="you@example.com, other@example.com" />
         <div className="flex gap-3 items-center flex-wrap">
           <button
             onClick={() => saveSection(emailKeys, setEmailStatus)}

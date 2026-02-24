@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.3] — 2026-02-24
+
+### Added
+
+- **`NTFY_ENABLED` and `EMAIL_ENABLED` env vars** — notification channels can now be enabled on first run via environment variables; previously only the connection details were seeded, leaving the enabled toggles off and requiring a manual visit to Settings to activate them
+- **Multiple email recipients** — `EMAIL_TO` (and the Settings **To** field) now accepts a comma-separated list of addresses (e.g. `you@example.com, other@example.com`); nodemailer handles delivery to all recipients
+
+### Fixed
+
+- **Enabled toggles not seeded from env vars** — `ntfy_enabled` and `email_enabled` were missing from `seedSettingsFromEnv()`; setting `NTFY_ENABLED=true` / `EMAIL_ENABLED=true` now correctly persists the toggle state to the database on first run
+
+---
+
 ## [1.3.2] — 2026-02-24
 
 ### Fixed
