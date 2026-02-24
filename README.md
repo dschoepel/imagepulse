@@ -181,13 +181,16 @@ In your DIUN configuration (`diun.yml`), add a webhook notifier pointing to your
 ```yaml
 notif:
   webhook:
-    endpoint: http://your-imagepulse-host:3579/api/webhook
+    endpoint: https://your-imagepulse-host/api/webhook   # use https:// when behind a reverse proxy
     method: POST
     headers:
       Content-Type: application/json
+      Authorization: "Bearer <your-webhook-secret>"      # omit if no secret is configured
 ```
 
 ImagePulse auto-detects the webhook source from the payload shape. Authentication is optional — configure a shared secret in **Settings → Webhook Security** (or via `WEBHOOK_SECRET`) to require an `Authorization: Bearer <secret>` header on all incoming webhooks.
+
+> **Note:** If ImagePulse is behind a reverse proxy (SWAG, Traefik, NPM) use `https://` for the endpoint. If DIUN and ImagePulse are on the same internal Docker network and you are connecting directly (no proxy), use `http://imagepulse:3579/api/webhook` with the container name.
 
 A minimal DIUN `docker-compose.yml` alongside ImagePulse:
 
@@ -210,15 +213,29 @@ watch:
 
 notif:
   webhook:
-    endpoint: http://imagepulse:3579/api/webhook
+    endpoint: https://your-imagepulse-host/api/webhook
     method: POST
     headers:
       Content-Type: application/json
+      Authorization: "Bearer <your-webhook-secret>"   # omit if no secret is configured
 
 providers:
   docker:
     watchStopped: false
 ```
+
+If you prefer environment variables over a config file, add these to your DIUN compose service:
+
+```yaml
+environment:
+  - DIUN_NOTIF_WEBHOOK_ENDPOINT=https://your-imagepulse-host/api/webhook
+  - DIUN_NOTIF_WEBHOOK_METHOD=POST
+  - DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE=application/json
+  - DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION=Bearer <your-webhook-secret>
+  - DIUN_NOTIF_WEBHOOK_TIMEOUT=10s
+```
+
+DIUN sends to all configured notifiers simultaneously, so you can keep existing ntfy, email, or other notifiers alongside the ImagePulse webhook.
 
 ## Development
 
