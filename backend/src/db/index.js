@@ -77,9 +77,9 @@ export function getEventById(id) {
 
 export function getChartData() {
   const eventsPerDay = db.prepare(`
-    SELECT date(created_at) as day, COUNT(*) as count
+    SELECT date(created_at, 'localtime') as day, COUNT(*) as count
     FROM events
-    WHERE created_at >= datetime('now', '-14 days')
+    WHERE date(created_at, 'localtime') >= date('now', 'localtime', '-13 days')
     GROUP BY day ORDER BY day ASC
   `).all();
 

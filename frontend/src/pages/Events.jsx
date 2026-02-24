@@ -36,7 +36,50 @@ function RawPayload({ raw }) {
   );
 }
 
-function EventDetail({ ev }) {
+function AddMappingInline({ image, onAdded }) {
+  const [repo, setRepo] = useState('');
+  const [status, setStatus] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!repo.trim()) return;
+    setStatus({ pending: true });
+    try {
+      await apiFetch('/settings/mappings', {
+        method: 'PUT',
+        body: JSON.stringify({ image, repo: repo.trim() }),
+      });
+      setStatus({ ok: true });
+      onAdded(image, repo.trim());
+    } catch (err) {
+      setStatus({ ok: false, msg: err.message });
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-0.5">
+      <input
+        type="text"
+        value={repo}
+        onChange={(e) => setRepo(e.target.value)}
+        placeholder="owner/repo"
+        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36"
+      />
+      <button
+        type="submit"
+        disabled={status?.pending || !repo.trim()}
+        className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {status?.pending ? 'Saving…' : 'Add'}
+      </button>
+      {status?.ok === false && (
+        <span className="text-xs text-red-600">{status.msg}</span>
+      )}
+    </form>
+  );
+}
+
+function EventDetail({ ev, mappedRepo, onMappingAdded }) {
   const [resendStatus, setResendStatus] = useState(null);
 
   let platform = '—';
@@ -92,6 +135,19 @@ function EventDetail({ ev }) {
               </dd>
             </div>
             <div className="flex gap-2">
+              <dt className="text-gray-500 w-24 shrink-0">Mapping</dt>
+              <dd>
+                {mappedRepo != null ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                    <span className="text-gray-700 font-mono">{mappedRepo}</span>
+                  </span>
+                ) : (
+                  <AddMappingInline image={ev.image} onAdded={onMappingAdded} />
+                )}
+              </dd>
+            </div>
+            <div className="flex gap-2">
               <dt className="text-gray-500 w-24 shrink-0">Release</dt>
               <dd>
                 {ev.github_release_url
@@ -135,6 +191,17 @@ export default function Events() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [mappings, setMappings] = useState({}); // { image: repo }
+
+  useEffect(() => {
+    apiFetch('/settings/mappings')
+      .then((d) => {
+        const m = {};
+        d.mappings.forEach(({ image, repo }) => { m[image] = repo; });
+        setMappings(m);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -159,6 +226,10 @@ export default function Events() {
 
   function toggleRow(id) {
     setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleMappingAdded(img, repo) {
+    setMappings((prev) => ({ ...prev, [img]: repo }));
   }
 
   const pages = pagination.pages;
@@ -235,7 +306,14 @@ export default function Events() {
                     <td className="w-8 px-2 py-3 text-center text-gray-400 text-xs select-none">
                       {expandedId === ev.id ? '▼' : '▶'}
                     </td>
-                    <td className="px-2 sm:px-4 py-3 font-mono text-xs text-gray-700 max-w-[80px] sm:max-w-xs truncate">{ev.image}</td>
+                    <td className="px-2 sm:px-4 py-3 max-w-[80px] sm:max-w-xs">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs text-gray-700 truncate">{ev.image}</span>
+                        {ev.image in mappings && (
+                          <span className="shrink-0 w-2 h-2 rounded-full bg-green-500" title="GitHub repo mapped" />
+                        )}
+                      </div>
+                    </td>
                     <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-700">{ev.tag}</td>
                     <td className="px-2 sm:px-4 py-3"><StatusBadge status={ev.status} /></td>
                     <td className="hidden sm:table-cell px-4 py-3 text-gray-500">{ev.source}</td>
@@ -247,7 +325,11 @@ export default function Events() {
                   {expandedId === ev.id && (
                     <tr key={`${ev.id}-detail`}>
                       <td colSpan={7} className="p-0">
-                        <EventDetail ev={ev} />
+                        <EventDetail
+                          ev={ev}
+                          mappedRepo={mappings[ev.image] ?? null}
+                          onMappingAdded={handleMappingAdded}
+                        />
                       </td>
                     </tr>
                   )}
