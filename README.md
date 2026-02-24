@@ -23,6 +23,13 @@ cd imagepulse
 cp .env.example .env
 # Edit .env with your settings
 
+# ⚠️  Create the data directory BEFORE starting the container and set
+# ownership to match the PUID/PGID you will run the container as.
+# If this directory is owned by root the container will fail to write
+# its database. Run `id` on your host to find your UID and GID.
+mkdir -p data
+sudo chown 1000:1000 data   # replace 1000:1000 with your PUID:PGID
+
 # Start with Docker Compose
 docker compose up -d
 ```
@@ -56,6 +63,34 @@ services:
 ```
 
 See the included `docker-compose.yml` for the fully-commented version including the optional reverse-proxy network block.
+
+### Data directory — create before first run
+
+> **This step is required.** The container runs as the user specified by `PUID:PGID` from the moment it starts. If the `data` directory on the host is owned by root (or any other user), the container cannot create or write the SQLite database and will fail silently.
+
+**docker compose (CLI):**
+
+```bash
+# Run this once on the host before `docker compose up`
+mkdir -p data
+sudo chown ${PUID:-1000}:${PGID:-1000} data
+```
+
+**Portainer / other container managers:**
+
+When deploying a stack through a web UI the host directory is often created automatically as root. Create and chown the directory manually on the host first, then deploy the stack:
+
+```bash
+mkdir -p /path/to/your/stack/data
+sudo chown 1000:1000 /path/to/your/stack/data   # match your PUID:PGID
+```
+
+To find the correct UID and GID for your host user, run:
+
+```bash
+id
+# uid=1000(youruser) gid=1000(youruser) ...
+```
 
 ### Reverse proxy (SWAG, Traefik, NPM)
 
