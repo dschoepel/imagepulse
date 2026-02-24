@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.1] — 2026-02-24
+
+### Changed
+
+- **README Webhook Setup** — all endpoint examples updated to use `https://`; `Authorization: Bearer` header added to both `diun.yml` and environment-variable examples; added callout explaining when to use `https://` (reverse proxy) vs direct container name; added environment-variable alternative for users who prefer not to use a `diun.yml` file; noted that DIUN fires all configured notifiers simultaneously
+
+---
+
 ## [1.3.0] — 2026-02-24
 
 ### Added
