@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.0] — 2026-02-24
+
+### Added
+
+- **Breadcrumb bar** — sticky header above page content shows `ImagePulse / {Page}` with a link back to Dashboard; height matches the sidebar header so separator lines align across the full width
+- **App name in sidebar** — "ImagePulse" text displayed next to the logo when the sidebar is expanded; hidden in icon-rail mode
+- **Sidebar footer** — GitHub icon, repository link, and current version (`v1.2.0`) shown at the bottom of the desktop sidebar and mobile drawer; icon-only in collapsed icon-rail mode
+- **Mapping indicator on events** — a green dot appears in the Image column for any event whose Docker image has a GitHub repo mapping
+- **Inline add-mapping from event detail** — expanding an unmapped event shows an `owner/repo` input and Add button in the Mapping metadata row; saves immediately and updates the UI without a page reload
+- **Sortable event columns** — Image, Tag, Status, Source, and Time column headers are clickable; clicking a new column sorts ASC, clicking again toggles DESC; active column highlighted with `↑`/`↓`, inactive columns show `↕`; sort is server-side so it applies across all pages
+
+### Changed
+
+- **Mappings nav icon** — replaced `ArrowsRightLeftIcon` with `MapIcon`
+- **Sidebar collapse toggle** — moved from the bottom of the sidebar to the header row (right side when expanded, below logo when collapsed)
+- **Chart timezone** — events-per-day chart now groups by local date (`date(created_at, 'localtime')`) so day buckets match the timestamps shown in the events list
+
+### Fixed
+
+- **Sidebar title clipping** — removed `leading-none` from the "ImagePulse" title; descenders on the `p` in "Pulse" no longer clip
+- **Breadcrumb/sidebar height misalignment** — both the sidebar header and breadcrumb bar are now explicitly `h-14` so their bottom separator lines are flush
+
+### Removed
+
+- **Duplicate workflow** — deleted `docker.yml`; `docker-build.yml` supersedes it with multi-arch builds (`amd64`/`arm64`), GHA layer caching, and per-commit SHA tags
+
+---
+
 ## [1.1.0] — 2026-02-23
 
 ### Added

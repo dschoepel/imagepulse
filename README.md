@@ -8,7 +8,7 @@ A self-hosted webhook receiver and notification hub for Docker image update even
 ## Features
 
 - **Dashboard** — live stat cards (total events, images tracked, last updated), bar charts for events over the last 14 days and top images by event count, and a clickable recent-events table that pops up notification details
-- **Events log** — filterable, paginated table of all received events with expandable detail rows showing notification content, full digest, platform, GitHub release link, and a Resend button
+- **Events log** — filterable, sortable, paginated table of all received events with expandable detail rows showing notification content, full digest, platform, GitHub release link, and a Resend button; mapped images are indicated with a green dot and unmapped images can be mapped inline from the detail row
 - **Mappings** — map Docker image names to GitHub repos so ImagePulse can fetch release notes; rows support inline editing (change image name or repo without deleting and re-adding)
 - **Settings** — configure ntfy and email notification channels with Show/Hide toggles on tokens and passwords; send test notifications to verify configuration
 
