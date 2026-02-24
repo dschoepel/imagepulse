@@ -38,7 +38,7 @@ services:
   imagepulse:
     image: ghcr.io/dschoepel/imagepulse:latest
     container_name: imagepulse
-    user: "${PUID:-1000}:${PGID:-1000}"
+    user: "${PUID:-1000}:${PGID:-1000}"  # run `id` on your host to find these values
     ports:
       - "${PORT:-3579}:${PORT:-3579}"
     volumes:
@@ -48,6 +48,9 @@ services:
       - PORT=${PORT:-3579}
       - TZ=${TZ:-UTC}
     env_file:
+      # Comment this out when using Portainer or similar tools that inject
+      # environment variables directly — define NTFY_*, SMTP_*, GITHUB_TOKEN,
+      # etc. under 'environment:' above instead.
       - .env
     restart: unless-stopped
 ```

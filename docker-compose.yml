@@ -47,8 +47,15 @@ services:
       - TZ=${TZ:-UTC}
 
     env_file:
-      # All remaining settings (ntfy, SMTP, GitHub token, retention,
-      # etc.) are loaded from .env. See .env.example for all options.
+      # Loads remaining settings (ntfy, SMTP, GitHub token, retention,
+      # etc.) from a local .env file. See .env.example for all options.
+      #
+      # Comment this out when using Portainer, Rancher, or any other
+      # container manager that injects environment variables directly
+      # (e.g. via a stack "Environment variables" UI). In that case,
+      # define NTFY_*, SMTP_*, GITHUB_TOKEN, etc. under 'environment:'
+      # above — Docker will pass them into the container and the app
+      # will pick them up via process.env without needing a .env file.
       - .env
 
     restart: unless-stopped
