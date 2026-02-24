@@ -13,6 +13,20 @@ export async function fetchReleaseNotes(repo, tag) {
       headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
     }
 
+    // Docker's 'latest' tag has no matching GitHub release tag — fetch the
+    // most recent published release instead.
+    if (tag === 'latest') {
+      const latestRes = await fetch(
+        `https://api.github.com/repos/${repo}/releases/latest`,
+        { headers }
+      );
+      if (latestRes.ok) {
+        const data = await latestRes.json();
+        return { name: data.name, body: data.body, url: data.html_url };
+      }
+      return null;
+    }
+
     // Try direct tag lookup first
     const directRes = await fetch(
       `https://api.github.com/repos/${repo}/releases/tags/${tag}`,
