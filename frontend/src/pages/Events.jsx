@@ -92,7 +92,6 @@ function AddMappingInline({ image, onAdded }) {
           type="text"
           value={repo}
           onChange={(e) => { setRepo(e.target.value); setRepoError(null); }}
-          onBlur={() => { if (repo.trim()) checkRepoInline(repo); }}
           placeholder="owner/repo"
           className={`border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36 ${
             repoError
