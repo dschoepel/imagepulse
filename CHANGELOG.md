@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.4] — 2026-02-24
+
+### Added
+
+- **Resolved release version in notifications for `latest`-tagged images** — when the Docker tag is `latest` and release notes are fetched, the actual GitHub release name (e.g. `Release: v1.3.3`) is now appended to the notification body and stored in the event detail panel
+
+### Fixed
+
+- **Inline add-mapping requires two clicks** — the `onBlur` handler on the repo input in the event detail panel triggered an async GitHub API call that set `repoChecking=true`, disabling the Add button between `mousedown` and `click`; the browser swallowed the click on the now-disabled button, requiring a second click to save; removed `onBlur` from the inline form (validation still runs on submit)
+
+---
+
 ## [1.3.3] — 2026-02-24
 
 ### Added
