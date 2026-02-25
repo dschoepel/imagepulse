@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.5] — 2026-02-25
+
+### Added
+
+- **ntfy click-to-open** — tapping an ntfy notification now opens the GitHub release page directly (mapped images only; requires ntfy app v1.16+)
+- **ntfy status-aware emoji tags** — new images get 🐳 + ✅ (`whale,white_check_mark`); updates get 🐳 + 🔄 (`whale,arrows_counterclockwise`)
+- **ntfy priority escalation** — `update` events are sent at priority 4 (high); `new` events remain at priority 3 (default)
+- **HTML email layout** — emails now render a structured HTML template: indigo header with image name and status badge (green = new, amber = update), metadata table, release notes `<pre>` block, "View on GitHub" button, and ImagePulse footer; plain-text fallback included for non-HTML clients
+- **Host field in notifications** — all notification bodies now include `Host: {hostname}` (sourced from DIUN's `rawPayload.hostname`); shows `(unknown)` when DIUN hostname is not configured
+- **`[ImagePulse]` email subject prefix** — makes ImagePulse notifications easy to filter and distinguish from DIUN's own emails
+- **`via ImagePulse` footer in ntfy body** — last line of every ntfy notification body to aid identification in notification centres
+- **`(unknown)` fallback for blank metadata** — Host, Digest, and Platform are always shown in notification body and email; blank or absent DIUN fields display `(unknown)` rather than being silently omitted
+
+### Changed
+
+- **Stored notification body** — now stores the full base body (Host, Status, Digest, Platform, Release, `via ImagePulse`) without release notes text appended; release notes are excluded from stored body (URL still stored separately); eliminates mid-sentence cut-offs in the event detail panel
+- **Resend** — ntfy resend derives tags and priority from the event's stored status; email resend sends full HTML layout with metadata reconstructed from `raw_payload`; click URL sourced from `github_release_url` column
+
+---
+
 ## [1.3.4] — 2026-02-24
 
 ### Added
