@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { getEvents, getEventCount, getEventStats, getEventById, getChartData, getSetting } from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
+import { buildEmailHtml } from '../services/emailTemplate.js';
+
+const na = v => (v && String(v).trim()) ? String(v).trim() : '(unknown)';
 
 const router = Router();
 
@@ -50,14 +53,51 @@ router.post('/:id/resend', async (req, res) => {
     if (!ev) return res.status(404).json({ ok: false, error: 'Event not found' });
     if (!ev.notification_title) return res.status(400).json({ ok: false, error: 'No notification content stored' });
 
+    // Derive tags and priority from stored status
+    const ntfyTags     = ev.status === 'new' ? ['whale', 'white_check_mark'] : ['whale', 'arrows_counterclockwise'];
+    const ntfyPriority = ev.status === 'new' ? 3 : 4;
+
     const errors = [];
     if (getSetting('ntfy_enabled') === 'true') {
-      try { await sendNtfy({ title: ev.notification_title, body: ev.notification_body, tags: ['whale'], priority: 3 }); }
-      catch (e) { errors.push(`ntfy: ${e.message}`); }
+      try {
+        await sendNtfy({
+          title:    ev.notification_title,
+          body:     ev.notification_body,
+          tags:     ntfyTags,
+          priority: ntfyPriority,
+          clickUrl: ev.github_release_url ?? null,
+        });
+      } catch (e) { errors.push(`ntfy: ${e.message}`); }
     }
     if (getSetting('email_enabled') === 'true') {
-      try { await sendEmail({ subject: ev.notification_title, text: ev.notification_body }); }
-      catch (e) { errors.push(`email: ${e.message}`); }
+      try {
+        // Reconstruct metadata from stored raw_payload
+        let rawPayload = {};
+        try { rawPayload = JSON.parse(ev.raw_payload || '{}'); } catch {}
+
+        const hostname = na(rawPayload.hostname);
+        const platform = na(rawPayload.platform);
+        const digestShort = na((ev.digest || '').slice(0, 12) || '');
+
+        // Build minimal releaseNotes — only url available on resend (no body stored)
+        const releaseNotes = ev.github_release_url ? { url: ev.github_release_url } : null;
+
+        const html = buildEmailHtml({
+          image:    ev.image,
+          tag:      ev.tag,
+          status:   na(ev.status),
+          hostname,
+          digest:   digestShort,
+          platform,
+          releaseNotes,
+        });
+
+        await sendEmail({
+          subject: `[ImagePulse] ${ev.notification_title}`,
+          text:    ev.notification_body,
+          html,
+        });
+      } catch (e) { errors.push(`email: ${e.message}`); }
     }
     if (errors.length) return res.status(500).json({ ok: false, error: errors.join('; ') });
     res.json({ ok: true });

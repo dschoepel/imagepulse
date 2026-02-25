@@ -3,10 +3,10 @@ import { getSetting } from '../db/index.js';
 
 /**
  * Send an ntfy push notification.
- * @param {{ title: string, body: string, tags?: string[], priority?: number }} notification
+ * @param {{ title: string, body: string, tags?: string[], priority?: number, clickUrl?: string|null }} notification
  * @returns {Promise<void>}
  */
-export async function sendNtfy({ title, body, tags = [], priority = 3 }) {
+export async function sendNtfy({ title, body, tags = [], priority = 3, clickUrl = null }) {
   const url   = getSetting('ntfy_url')   || process.env.NTFY_URL   || 'https://ntfy.sh';
   const topic = getSetting('ntfy_topic') || process.env.NTFY_TOPIC;
   const token = getSetting('ntfy_token') || process.env.NTFY_TOKEN;
@@ -20,6 +20,7 @@ export async function sendNtfy({ title, body, tags = [], priority = 3 }) {
     'Priority': String(priority),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (clickUrl) headers['Click'] = clickUrl;
 
   const res = await fetch(`${url}/${topic}`, {
     method: 'POST',

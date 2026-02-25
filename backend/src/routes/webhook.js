@@ -4,8 +4,12 @@ import { insertEvent, markNotified, getSetting, pruneOldEvents, getDb } from '..
 import { fetchReleaseNotes } from '../services/github.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
+import { buildEmailHtml } from '../services/emailTemplate.js';
 
 const router = Router();
+
+// Return value or '(unknown)' when blank/absent
+const na = v => (v && String(v).trim()) ? String(v).trim() : '(unknown)';
 
 router.post('/', async (req, res) => {
   try {
@@ -32,28 +36,47 @@ router.post('/', async (req, res) => {
       releaseNotes = await fetchReleaseNotes(mapping.repo, event.tag);
     }
 
-    // Build notification content
-    const title = `Image updated: ${event.image}:${event.tag}`;
-    const digestShort = (event.digest || '').slice(0, 12);
-    let basebody = `Status: ${event.status}`;
-    if (digestShort) basebody += `\nDigest: ${digestShort}`;
-    if (event.rawPayload?.platform) basebody += `\nPlatform: ${event.rawPayload.platform}`;
-    if (event.tag === 'latest' && releaseNotes?.name) basebody += `\nRelease: ${releaseNotes.name}`;
+    // Resolve metadata fields — always shown, (unknown) when blank
+    const hostname    = na(event.rawPayload?.hostname);
+    const platform    = na(event.rawPayload?.platform);
+    const digestShort = na((event.digest || '').slice(0, 12) || '');
+    const status      = na(event.status);
 
-    // ntfy body — release notes truncated to 300 chars (push notification limit)
+    // Base body (stored in DB — no release notes text, no truncation)
+    let baseBody = `Host: ${hostname}\nStatus: ${status}\nDigest: ${digestShort}\nPlatform: ${platform}`;
+    if (event.tag === 'latest' && releaseNotes?.name) {
+      baseBody += `\nRelease: ${releaseNotes.name}`;
+    }
+    baseBody += '\nvia ImagePulse';
+
+    // ntfy body — append release notes truncated to 300 chars
     const ntfyBody = releaseNotes?.body
-      ? `${basebody}\n\n${releaseNotes.body.slice(0, 300)}`
-      : basebody;
+      ? `${baseBody}\n\n${releaseNotes.body.slice(0, 300)}`
+      : baseBody;
 
-    // Email body — full release notes text
+    // ntfy tags and priority — status-aware
+    const ntfyTags     = event.status === 'new' ? ['whale', 'white_check_mark'] : ['whale', 'arrows_counterclockwise'];
+    const ntfyPriority = event.status === 'new' ? 3 : 4;
+
+    // Notification title (ntfy) and email subject
+    const title   = `Image updated: ${event.image}:${event.tag}`;
+    const subject = `[ImagePulse] ${title}`;
+
+    // Email plain-text fallback
     const emailBody = releaseNotes?.body
-      ? `${basebody}\n\n${releaseNotes.body}`
-      : basebody;
+      ? `${baseBody}\n\n${releaseNotes.body}`
+      : baseBody;
 
     // Send ntfy notification
     if (getSetting('ntfy_enabled') === 'true') {
       try {
-        await sendNtfy({ title, body: ntfyBody, tags: ['whale'], priority: 3 });
+        await sendNtfy({
+          title,
+          body: ntfyBody,
+          tags: ntfyTags,
+          priority: ntfyPriority,
+          clickUrl: releaseNotes?.url ?? null,
+        });
       } catch (err) {
         console.error('ntfy notification failed:', err.message);
       }
@@ -62,14 +85,23 @@ router.post('/', async (req, res) => {
     // Send email notification
     if (getSetting('email_enabled') === 'true') {
       try {
-        await sendEmail({ subject: title, text: emailBody });
+        const html = buildEmailHtml({
+          image:        event.image,
+          tag:          event.tag,
+          status,
+          hostname,
+          digest:       digestShort,
+          platform,
+          releaseNotes,
+        });
+        await sendEmail({ subject, text: emailBody, html });
       } catch (err) {
         console.error('Email notification failed:', err.message);
       }
     }
 
-    // Store the ntfy body in the DB (used for UI display and resend)
-    markNotified(id, title, ntfyBody, releaseNotes?.url ?? null);
+    // Store the full base body (no truncation) in the DB
+    markNotified(id, title, baseBody, releaseNotes?.url ?? null);
 
     // Prune old events if retention is configured
     const retentionDays = parseInt(getSetting('retention_days') || '0', 10);
