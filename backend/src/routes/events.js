@@ -89,6 +89,7 @@ router.post('/:id/resend', async (req, res) => {
           hostname,
           digest:   digestShort,
           platform,
+          resolvedVersion: ev.resolved_version ?? null,
           releaseNotes,
         });
 

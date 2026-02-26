@@ -45,6 +45,7 @@ export function initDb() {
   try { db.exec('ALTER TABLE events ADD COLUMN notification_title TEXT'); } catch {}
   try { db.exec('ALTER TABLE events ADD COLUMN notification_body TEXT'); } catch {}
   try { db.exec('ALTER TABLE events ADD COLUMN github_release_url TEXT'); } catch {}
+  try { db.exec('ALTER TABLE events ADD COLUMN resolved_version TEXT'); } catch {}
 
   return db;
 }
@@ -65,10 +66,12 @@ export function insertEvent({ image, tag, digest, status, source, rawPayload }) 
   return result.lastInsertRowid;
 }
 
-export function markNotified(id, notificationTitle, notificationBody, githubReleaseUrl) {
+export function markNotified(id, notificationTitle, notificationBody, githubReleaseUrl, resolvedVersion) {
   db.prepare(`UPDATE events SET notified_at = datetime('now'),
-    notification_title = ?, notification_body = ?, github_release_url = ? WHERE id = ?`)
-    .run(notificationTitle ?? null, notificationBody ?? null, githubReleaseUrl ?? null, id);
+    notification_title = ?, notification_body = ?, github_release_url = ?,
+    resolved_version = ? WHERE id = ?`)
+    .run(notificationTitle ?? null, notificationBody ?? null,
+         githubReleaseUrl ?? null, resolvedVersion ?? null, id);
 }
 
 export function getEventById(id) {

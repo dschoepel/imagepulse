@@ -1,9 +1,9 @@
 /**
  * Build an HTML email for an image update notification.
- * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, releaseNotes?: { name?: string, body?: string, url?: string }|null }} params
+ * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, resolvedVersion?: string|null, releaseNotes?: { name?: string, body?: string, url?: string }|null }} params
  * @returns {string} HTML string
  */
-export function buildEmailHtml({ image, tag, status, hostname, digest, platform, releaseNotes }) {
+export function buildEmailHtml({ image, tag, status, hostname, digest, platform, resolvedVersion, releaseNotes }) {
   const isNew = status === 'new';
   const statusLabel = isNew ? 'NEW' : 'UPDATE';
   const badgeColor  = isNew ? '#16a34a' : '#d97706';
@@ -13,8 +13,8 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
     ['Digest',   digest],
     ['Platform', platform],
   ];
-  if (tag === 'latest' && releaseNotes?.name) {
-    rows.push(['Release', releaseNotes.name]);
+  if (resolvedVersion) {
+    rows.push(['Version', resolvedVersion]);
   }
 
   const metaRows = rows.map(([label, value]) => `
@@ -23,12 +23,13 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
       <td style="padding:6px 0;color:#111827;font-size:13px;word-break:break-all;">${escHtml(value)}</td>
     </tr>`).join('');
 
+  const releaseLabel = releaseNotes?.name || resolvedVersion || '';
   const releaseSection = releaseNotes ? `
     <tr><td style="padding:0;">
       <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e5e7eb;">
         <tr><td style="padding:16px 24px 8px;">
           <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#111827;">
-            Release Notes${releaseNotes.name ? ` — ${escHtml(releaseNotes.name)}` : ''}
+            Release Notes${releaseLabel ? ` — ${escHtml(releaseLabel)}` : ''}
           </p>
           ${releaseNotes.body ? `<pre style="margin:0 0 12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;line-height:1.5;color:#374151;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${escHtml(releaseNotes.body)}</pre>` : ''}
           ${releaseNotes.url ? `<a href="${escAttr(releaseNotes.url)}" style="display:inline-block;padding:8px 16px;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:4px;font-size:13px;font-weight:500;">View on GitHub ↗</a>` : ''}

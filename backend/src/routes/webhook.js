@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { parseWebhook } from '../adapters/index.js';
 import { insertEvent, markNotified, getSetting, pruneOldEvents, getDb } from '../db/index.js';
 import { fetchReleaseNotes } from '../services/github.js';
+import { resolveVersionTag } from '../services/registry.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
 import { buildEmailHtml } from '../services/emailTemplate.js';
@@ -36,6 +37,12 @@ router.post('/', async (req, res) => {
       releaseNotes = await fetchReleaseNotes(mapping.repo, event.tag);
     }
 
+    // Resolve version tag from registry digest (latest-tagged images only)
+    let resolvedVersion = null;
+    if (event.tag === 'latest') {
+      resolvedVersion = await resolveVersionTag(event.image, event.digest);
+    }
+
     // Resolve metadata fields — always shown, (unknown) when blank
     const hostname    = na(event.rawPayload?.hostname);
     const platform    = na(event.rawPayload?.platform);
@@ -44,9 +51,7 @@ router.post('/', async (req, res) => {
 
     // Base body (stored in DB — no release notes text, no truncation)
     let baseBody = `Host: ${hostname}\nStatus: ${status}\nDigest: ${digestShort}\nPlatform: ${platform}`;
-    if (event.tag === 'latest' && releaseNotes?.name) {
-      baseBody += `\nRelease: ${releaseNotes.name}`;
-    }
+    if (resolvedVersion) baseBody += `\nVersion: ${resolvedVersion}`;
     baseBody += '\nvia ImagePulse';
 
     // ntfy body — append release notes truncated to 300 chars
@@ -92,6 +97,7 @@ router.post('/', async (req, res) => {
           hostname,
           digest:       digestShort,
           platform,
+          resolvedVersion,
           releaseNotes,
         });
         await sendEmail({ subject, text: emailBody, html });
@@ -101,7 +107,7 @@ router.post('/', async (req, res) => {
     }
 
     // Store the full base body (no truncation) in the DB
-    markNotified(id, title, baseBody, releaseNotes?.url ?? null);
+    markNotified(id, title, baseBody, releaseNotes?.url ?? null, resolvedVersion);
 
     // Prune old events if retention is configured
     const retentionDays = parseInt(getSetting('retention_days') || '0', 10);

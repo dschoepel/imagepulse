@@ -168,6 +168,12 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
               <dt className="text-gray-500 w-24 shrink-0">Platform</dt>
               <dd className="text-gray-700">{platform}</dd>
             </div>
+            {ev.resolved_version && (
+              <div className="flex gap-2">
+                <dt className="text-gray-500 w-24 shrink-0">Version</dt>
+                <dd className="font-mono text-gray-800">{ev.resolved_version}</dd>
+              </div>
+            )}
             <div className="flex gap-2">
               <dt className="text-gray-500 w-24 shrink-0">Notified at</dt>
               <dd className="text-gray-700">
