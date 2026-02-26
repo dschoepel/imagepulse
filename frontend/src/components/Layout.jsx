@@ -159,7 +159,7 @@ export default function Layout() {
           </div>
         ) : (
           <div className="border-b border-gray-700 flex items-center gap-2 px-3 h-14">
-            <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto shrink-0 flex-1 min-w-0" />
+            <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
             <button onClick={toggleCollapsed}
                     className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800 shrink-0"
                     aria-label="Collapse sidebar">
