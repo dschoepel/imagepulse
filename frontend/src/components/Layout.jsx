@@ -103,7 +103,7 @@ export default function Layout() {
                 className="p-2 rounded hover:bg-gray-800" aria-label="Open navigation">
           <Bars3Icon className="w-6 h-6" />
         </button>
-        <img src="/logo.svg" alt="ImagePulse" className="h-8 w-auto ml-3" />
+        <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto ml-3" />
       </header>
 
       {/* Mobile backdrop */}
@@ -118,8 +118,7 @@ export default function Layout() {
                          ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-4 py-4 border-b border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
-            <span className="font-semibold text-white text-lg">ImagePulse</span>
+            <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
           </div>
           <button onClick={() => setDrawerOpen(false)}
                   className="p-1 text-gray-400 hover:text-white shrink-0" aria-label="Close navigation">
@@ -151,7 +150,7 @@ export default function Layout() {
         {/* Sidebar header — logo + name + collapse toggle */}
         {collapsed ? (
           <div className="border-b border-gray-700 flex flex-col items-center gap-2 py-3">
-            <img src="/logo.svg" alt="IP" className="h-8 w-8 object-cover object-left" />
+            <img src="/Image-Pulse-Logo-1.svg" alt="IP" className="h-8 w-8 object-cover object-left" />
             <button onClick={toggleCollapsed}
                     className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800"
                     aria-label="Expand sidebar">
@@ -160,10 +159,7 @@ export default function Layout() {
           </div>
         ) : (
           <div className="border-b border-gray-700 flex items-center gap-2 px-3 h-14">
-            <img src="/logo.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
-            <span className="font-semibold text-white text-base flex-1 min-w-0 truncate">
-              ImagePulse
-            </span>
+            <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto shrink-0 flex-1 min-w-0" />
             <button onClick={toggleCollapsed}
                     className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800 shrink-0"
                     aria-label="Collapse sidebar">

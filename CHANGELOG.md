@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.6] — 2026-02-26
+
+### Added
+
+- **Registry digest → version tag lookup** — for `latest`-tagged images, ImagePulse now queries the Docker Hub / GHCR / generic OCI registry to find the semver tag (e.g. `v1.3.6`) that shares the same digest; the resolved version is shown as `Version:` in ntfy notifications, the email metadata table, and the Events detail panel — no GitHub repo mapping required
+  - Docker Hub: uses the `hub.docker.com/v2/repositories` tags API (up to 3 pages, no auth required for public repos)
+  - GHCR (`ghcr.io`): anonymous token fetch → tag list → HEAD manifests compared via `Docker-Content-Digest` header
+  - Generic OCI registries: same OCI pattern with a dynamic host; tries unauthenticated first, falls back to token on 401
+  - Private registries are out of scope — lookup is skipped gracefully
+  - Results are cached in-memory for 1 hour (including `null` results) to avoid repeated registry calls for the same digest
+  - Always degrades gracefully — a registry failure never blocks webhook processing
+- **`resolved_version` DB column** — stored on each event so resent emails include the correct version without re-querying the registry
+- **Custom favicon and logo** — replaced the placeholder SVG favicon and logo with the official ImagePulse assets (`favicon.ico`, `Image-Pulse-Logo-1.svg`)
+
+### Changed
+
+- **`Version:` replaces `Release:` in notification body** — the version line is now sourced from the registry lookup (works for all images) rather than the GitHub release name (mapped images only); GitHub release notes body and URL are still used for email content and ntfy click URL on mapped images
+
+---
+
 ## [1.3.5] — 2026-02-25
 
 ### Added
