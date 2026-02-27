@@ -272,13 +272,13 @@ export default function Settings() {
         {/* Shared Secret field with show/hide + copy + generate */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600">Shared Secret</label>
-          <div className="flex items-center gap-2 w-full max-w-sm">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 w-full max-w-sm">
             <input
               type={showSecret ? 'text' : 'password'}
               value={s.webhook_secret ?? ''}
               onChange={(e) => { set('webhook_secret', e.target.value); setWebhookStatus(null); }}
               placeholder="leave blank to disable"
-              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full font-mono"
+              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-0 flex-1 font-mono"
             />
             <button
               type="button"

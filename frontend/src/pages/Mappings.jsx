@@ -272,7 +272,7 @@ export default function Mappings() {
 
           {/* Submit button */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs invisible select-none" aria-hidden="true">x</span>
+            <span className="text-xs invisible select-none hidden sm:block" aria-hidden="true">x</span>
             <button
               type="submit"
               disabled={addLinkChecking}
@@ -287,7 +287,7 @@ export default function Mappings() {
         <div className="flex flex-col gap-2">
           <RadioGroup value={newLinkType} onChange={(v) => { setNewLinkType(v); setAddLinkError(null); }} />
           {newLinkType === 'github' ? (
-            <div className="flex flex-col gap-1 max-w-sm">
+            <div className="flex flex-col gap-1 w-full max-w-sm">
               <label className="text-xs font-medium text-gray-600">GitHub repo (owner/repo)</label>
               <input
                 type="text"
@@ -295,14 +295,14 @@ export default function Mappings() {
                 value={newRepo}
                 onChange={(e) => { setNewRepo(e.target.value); setAddLinkError(null); }}
                 onBlur={() => { if (newRepo.trim()) checkRepo(newRepo, setAddLinkError, setAddLinkChecking); }}
-                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addLinkError)}`}
+                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
               />
               {addLinkChecking
                 ? <p className="text-xs text-gray-400 mt-1">Checking GitHub…</p>
                 : <FieldError err={addLinkError} />}
             </div>
           ) : (
-            <div className="flex flex-col gap-1 max-w-sm">
+            <div className="flex flex-col gap-1 w-full max-w-sm">
               <label className="text-xs font-medium text-gray-600">Release notes URL</label>
               <input
                 type="url"
@@ -310,7 +310,7 @@ export default function Mappings() {
                 value={newUrl}
                 onChange={(e) => { setNewUrl(e.target.value); setAddLinkError(null); }}
                 onBlur={() => { if (newUrl.trim()) checkUrl(newUrl, setAddLinkError, setAddLinkChecking); }}
-                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addLinkError)}`}
+                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
               />
               {addLinkChecking
                 ? <p className="text-xs text-gray-400 mt-1">Checking URL…</p>
@@ -458,7 +458,7 @@ export default function Mappings() {
 
       {/* Pagination controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 text-sm text-gray-500">
           <span>{rangeStart}–{rangeEnd} of {filtered.length}</span>
           <div className="flex items-center gap-1">
             <button
