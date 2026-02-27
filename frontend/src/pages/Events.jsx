@@ -409,7 +409,7 @@ export default function Events() {
 
       {error && <p className="text-red-600 text-sm">Error: {error}</p>}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -455,7 +455,8 @@ export default function Events() {
                     <td className="hidden sm:table-cell px-4 py-3 text-gray-500">{ev.source}</td>
                     <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-gray-400">{(ev.digest || '').slice(0, 12)}</td>
                     <td className="px-2 sm:px-4 py-3 text-gray-500 whitespace-nowrap">
-                      {new Date(ev.created_at + 'Z').toLocaleString()}
+                      <span className="hidden sm:inline">{new Date(ev.created_at + 'Z').toLocaleString()}</span>
+                      <span className="sm:hidden">{new Date(ev.created_at + 'Z').toLocaleDateString()}</span>
                     </td>
                   </tr>
                   {expandedId === ev.id && (
