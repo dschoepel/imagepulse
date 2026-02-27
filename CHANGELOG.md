@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.1] — 2026-02-27
+
+### Fixed
+
+- **Mappings: double-save bug** — removed `onBlur` validation on the repo/URL inputs in both the Add form and Edit row; the async GitHub/URL check triggered on blur disabled the Save button between `mousedown` and `click`, swallowing the first click and requiring a second press; validation still runs on submit
+- **Events: inline add-mapping — GitHub Repo only** — the inline Add Mapping form in the event detail row now supports both **GitHub Repo** and **Release Notes URL** link types via a compact radio toggle, matching the full Mappings page form
+- **Release notes link label** — "View on GitHub ↗" renamed to "View Release Notes ↗" in the email button, Events detail panel, and Event Archive detail panel so the label is accurate for URL-type mappings
+
+### Added
+
+- **Logging: `LOG_LEVEL` / `LOG_FILE` env vars** — documented in `.env.example`, `docker-compose.yml` (commented entries), and README; `LOG_FILE` points to `/app/data/imagepulse.log` when file output is desired alongside stdout
+
+### Changed
+
+- **README** — updated Features, Mappings, Notifications, Settings sections for v1.4.x; added Logging section; updated Environment Variables table with `LOG_LEVEL` and `LOG_FILE`
+
+---
+
 ## [1.4.0] — 2026-02-27
 
 ### Added
