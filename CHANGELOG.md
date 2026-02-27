@@ -17,7 +17,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Sidebar version update indicator** — sidebar footer shows `v1.3.6 → v1.4.0` (linked to the release) when a newer GitHub release is available; collapsed mode shows an orange dot on the GitHub icon; checked once on load with a 1-hour server-side cache to avoid GitHub API rate limits (`GET /api/version`)
 - **Event Archive** — new `/events/archive` sub-page lists events moved there by Archive & Clean; read-only with filter, sort, per-page selector (5/10/25/50/100), range indicator, and expandable detail rows; breadcrumb shows `ImagePulse / Events / Archive`
 - **Settings — Event Retention: manual cleanup buttons** — two new buttons alongside Save: **Run Cleanup Now** (permanently deletes events older than the configured retention period) and **Archive & Clean** (copies matching events to the archive table first, then deletes from the main log); both show a confirmation modal with the exact event count before acting; modal explains when retention is disabled (0 days) or nothing qualifies
-
 - **Structured logging (pino)** — all `console.log/error/warn` calls replaced with a pino logger; log level controlled via `LOG_LEVEL` env var (default `info`); optional append-mode file output via `LOG_FILE` env var; each log line is JSON with structured fields (e.g. `{ id, image, tag, status }` on webhook events)
 
 ### Changed
@@ -25,14 +24,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Sidebar collapse/expand button** — restyled as a small always-visible pill button (`<<` / `>>`); subtle at rest (blends with sidebar), clearly highlighted on hover
 - **Settings — Webhook Security: shared secret field** — added Show/Hide toggle and Copy button alongside the existing Generate button; Copy is disabled when field is empty
 - **Settings — Webhook Security: DIUN config snippets** — replaced the single static code block with two collapsible cards (start closed to save space): "diun.yml standalone config" and "Docker Compose environment variables"; each card has a Copy-to-clipboard button overlaid on the code block; the diun.yml card populates the actual secret value when one is set; the Docker Compose card uses `${DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION}` variable substitution and the description shows the matching `.env` line to add
-
-### Changed
-
 - **ntfy notification title** — new format: `[Host]: [image:tag] - [status phrase]` (e.g. `myserver: docker.io/library/nginx:latest - has been updated`); status phrase is "has been updated" or "is new"
 - **ntfy notification icon** — replaced the `:whale:` emoji tag with the app's favicon served from the running instance (`/favicon.ico`); icon URL is derived from the incoming request so it works correctly behind a reverse proxy
 - **Email notification header** — replaced the 🐳 whale emoji with the app favicon (`<img>` tag); heading now shows `[Hostname] / [image:tag]` at larger (20 px) bold font; hostname subtitle line removed
 - **Email metadata labels** — `Status`, `Digest`, `Platform`, and `Version` labels are now bold and include a colon separator (e.g. `Status:   update`)
 - **Reverse proxy support** — added `trust proxy 1` to Express so `req.protocol` correctly reflects HTTPS when running behind nginx/Traefik/Caddy
+- **Release notes link label** — renamed "View on GitHub ↗" to "View Release Notes ↗" in the email button, Events detail panel, and Event Archive detail panel so the label is accurate for both GitHub repo mappings and arbitrary URL-type mappings
 
 ---
 
