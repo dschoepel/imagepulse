@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import webhookRouter from './routes/webhook.js';
 import eventsRouter from './routes/events.js';
 import settingsRouter from './routes/settings.js';
+import versionRouter from './routes/version.js';
 import { initDb, getSetting, pruneOldEvents, seedSettingsFromEnv } from './db/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,7 @@ app.use(express.json());
 app.use('/api/webhook', webhookRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/version', versionRouter);
 
 // Serve frontend static files when the production build is present
 const publicDir = path.join(__dirname, '..', 'public');

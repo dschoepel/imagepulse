@@ -13,6 +13,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Mappings: search/filter** — filter the mappings table by image name in real time
 - **Mappings: custom pagination** — per-page selector (5, 10, 25, 50, 100) with page navigation and range indicator
 - **Events: custom pagination** — per-page selector (5, 10, 25, 50, 100) persisted to localStorage; pagination bar now shows range indicator (e.g. "26–50 of 142")
+- **Sidebar version update indicator** — sidebar footer shows `v1.3.6 → v1.4.0` (linked to the release) when a newer GitHub release is available; collapsed mode shows an orange dot on the GitHub icon; checked once on load with a 1-hour server-side cache to avoid GitHub API rate limits (`GET /api/version`)
+
+### Changed
+
+- **Sidebar collapse/expand button** — restyled as a small always-visible pill button (`<<` / `>>`); subtle at rest (blends with sidebar), clearly highlighted on hover
 
 ### Changed
 

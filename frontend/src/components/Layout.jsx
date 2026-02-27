@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import {
   Squares2X2Icon,
@@ -6,8 +6,6 @@ import {
   MapIcon,
   Cog6ToothIcon,
   Bars3Icon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import pkg from '../../package.json';
@@ -93,6 +91,14 @@ export default function Layout() {
     });
   }
 
+  const [versionInfo, setVersionInfo] = useState(null);
+  useEffect(() => {
+    fetch('/api/version')
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setVersionInfo(d); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-50">
 
@@ -138,7 +144,20 @@ export default function Layout() {
              className="hover:text-white transition-colors truncate">
             ImagePulse
           </a>
-          <span className="ml-auto shrink-0">v{pkg.version}</span>
+          <span className="ml-auto shrink-0 flex items-center gap-1">
+            {versionInfo?.hasUpdate ? (
+              <>
+                <span>v{versionInfo.current}</span>
+                <span className="text-gray-600">→</span>
+                <a href={versionInfo.latestUrl} target="_blank" rel="noreferrer"
+                   className="text-orange-400 hover:text-orange-300 font-medium">
+                  v{versionInfo.latest}
+                </a>
+              </>
+            ) : (
+              <span>v{pkg.version}</span>
+            )}
+          </span>
         </div>
       </aside>
 
@@ -152,18 +171,18 @@ export default function Layout() {
           <div className="border-b border-gray-700 flex flex-col items-center gap-2 py-3">
             <img src="/Image-Pulse-Logo-1.svg" alt="IP" className="h-8 w-8 object-cover object-left" />
             <button onClick={toggleCollapsed}
-                    className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800"
+                    className="text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-600 border border-gray-700 hover:border-gray-500 rounded px-1.5 py-0.5 text-xs font-bold leading-none transition-all"
                     aria-label="Expand sidebar">
-              <ChevronRightIcon className="w-4 h-4" />
+              &gt;&gt;
             </button>
           </div>
         ) : (
           <div className="border-b border-gray-700 flex items-center gap-2 px-3 h-14">
             <img src="/Image-Pulse-Logo-1.svg" alt="ImagePulse" className="h-8 w-auto shrink-0" />
             <button onClick={toggleCollapsed}
-                    className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-800 shrink-0"
+                    className="ml-auto text-gray-500 hover:text-white bg-gray-800 hover:bg-gray-600 border border-gray-700 hover:border-gray-500 rounded px-1.5 py-0.5 text-xs font-bold leading-none transition-all shrink-0"
                     aria-label="Collapse sidebar">
-              <ChevronLeftIcon className="w-4 h-4" />
+              &lt;&lt;
             </button>
           </div>
         )}
@@ -178,14 +197,33 @@ export default function Layout() {
         {/* Sidebar footer — GitHub link + version */}
         <div className={`border-t border-gray-700 py-3 flex items-center gap-2 text-xs text-gray-400
                          ${collapsed ? 'flex-col justify-center px-0' : 'px-4'}`}>
-          <GitHubIcon className="w-4 h-4 shrink-0" />
+          {/* GitHub icon — with update dot in collapsed mode */}
+          <div className="relative shrink-0">
+            <GitHubIcon className="w-4 h-4" />
+            {collapsed && versionInfo?.hasUpdate && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-orange-400" title={`v${versionInfo.latest} available`} />
+            )}
+          </div>
           {!collapsed && (
             <>
               <a href="https://github.com/dschoepel/imagepulse" target="_blank" rel="noreferrer"
                  className="hover:text-white transition-colors truncate">
                 ImagePulse
               </a>
-              <span className="ml-auto shrink-0">v{pkg.version}</span>
+              <span className="ml-auto shrink-0 flex items-center gap-1">
+                {versionInfo?.hasUpdate ? (
+                  <>
+                    <span>v{versionInfo.current}</span>
+                    <span className="text-gray-600">→</span>
+                    <a href={versionInfo.latestUrl} target="_blank" rel="noreferrer"
+                       className="text-orange-400 hover:text-orange-300 font-medium">
+                      v{versionInfo.latest}
+                    </a>
+                  </>
+                ) : (
+                  <span>v{pkg.version}</span>
+                )}
+              </span>
             </>
           )}
         </div>
