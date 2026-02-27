@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, validateRepo } from '../api.js';
+import { apiFetch, validateRepo, validateUrl } from '../api.js';
 
 function StatusBadge({ status }) {
   const colours = {
@@ -38,84 +38,120 @@ function RawPayload({ raw }) {
 }
 
 function AddMappingInline({ image, onAdded }) {
-  const [repo, setRepo] = useState('');
-  const [status, setStatus] = useState(null);
-  const [repoError, setRepoError] = useState(null);
-  const [repoChecking, setRepoChecking] = useState(false);
-
-  async function checkRepoInline(value) {
-    const v = value.trim();
-    if (!v) { setRepoError({ message: 'Required', isWarning: false }); return false; }
-    if (!/^[a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-]+$/.test(v)) {
-      setRepoError({ message: 'Must be owner/repo format', isWarning: false });
-      return false;
-    }
-    setRepoChecking(true);
-    setRepoError(null);
-    try {
-      const d = await validateRepo(v);
-      if (d.repoExists === true) { setRepoError(null); return true; }
-      if (d.repoExists === false) {
-        setRepoError({ message: d.repoError || 'Repository not found on GitHub', isWarning: false });
-        return false;
-      }
-      setRepoError({ message: d.repoError || 'Could not verify repo', isWarning: true });
-      return true;
-    } catch {
-      setRepoError({ message: 'Could not reach GitHub', isWarning: true });
-      return true;
-    } finally {
-      setRepoChecking(false);
-    }
-  }
+  const [linkType, setLinkType] = useState('github');
+  const [repo, setRepo]         = useState('');
+  const [url, setUrl]           = useState('');
+  const [linkError, setLinkError] = useState(null);
+  const [checking, setChecking]   = useState(false);
+  const [status, setStatus]       = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const ok = await checkRepoInline(repo);
-    if (!ok) return;
+    setLinkError(null);
+
+    // Client-side validation
+    if (linkType === 'github') {
+      const v = repo.trim();
+      if (!v) { setLinkError({ message: 'Required', isWarning: false }); return; }
+      if (!/^[a-zA-Z0-9_.\-]+\/[a-zA-Z0-9_.\-]+$/.test(v)) {
+        setLinkError({ message: 'Must be owner/repo format', isWarning: false }); return;
+      }
+    } else {
+      if (!url.trim()) { setLinkError({ message: 'Required', isWarning: false }); return; }
+    }
+
+    // Remote validation
+    setChecking(true);
+    let canSave = true;
+    try {
+      if (linkType === 'github') {
+        const d = await validateRepo(repo.trim());
+        if (d.repoExists === false) {
+          setLinkError({ message: d.repoError || 'Repository not found on GitHub', isWarning: false }); canSave = false;
+        } else if (d.repoExists === null) {
+          setLinkError({ message: d.repoError || 'Could not verify repo', isWarning: true });
+        }
+      } else {
+        const d = await validateUrl(url.trim());
+        if (d.urlReachable === false) {
+          setLinkError({ message: d.urlError || 'URL is not reachable', isWarning: false }); canSave = false;
+        } else if (d.urlReachable === null) {
+          setLinkError({ message: d.urlError || 'Could not verify URL', isWarning: true });
+        }
+      }
+    } catch {
+      setLinkError({ message: linkType === 'github' ? 'Could not reach GitHub' : 'Could not verify URL', isWarning: true });
+    } finally {
+      setChecking(false);
+    }
+
+    if (!canSave) return;
+
+    // Save
     setStatus({ pending: true });
+    const displayValue = linkType === 'github' ? repo.trim() : url.trim();
     try {
       await apiFetch('/settings/mappings', {
         method: 'PUT',
-        body: JSON.stringify({ image, repo: repo.trim() }),
+        body: JSON.stringify({
+          image,
+          repo:      linkType === 'github' ? repo.trim() : '',
+          url:       linkType === 'url'    ? url.trim()  : '',
+          link_type: linkType,
+        }),
       });
       setStatus({ ok: true });
-      onAdded(image, repo.trim());
+      onAdded(image, displayValue);
     } catch (err) {
       setStatus({ ok: false, msg: err.message });
     }
   }
 
+  const inputValue    = linkType === 'github' ? repo : url;
+  const setInputValue = linkType === 'github' ? setRepo : setUrl;
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-1 mt-0.5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-1.5 mt-0.5">
+      <div className="flex gap-3 text-xs text-gray-600">
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input type="radio" checked={linkType === 'github'}
+                 onChange={() => { setLinkType('github'); setLinkError(null); }}
+                 className="accent-indigo-600" />
+          GitHub Repo
+        </label>
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input type="radio" checked={linkType === 'url'}
+                 onChange={() => { setLinkType('url'); setLinkError(null); }}
+                 className="accent-indigo-600" />
+          Release Notes URL
+        </label>
+      </div>
       <div className="flex items-center gap-2">
         <input
-          type="text"
-          value={repo}
-          onChange={(e) => { setRepo(e.target.value); setRepoError(null); }}
-          placeholder="owner/repo"
-          className={`border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36 ${
-            repoError
-              ? repoError.isWarning ? 'border-amber-400' : 'border-red-400'
+          type={linkType === 'url' ? 'url' : 'text'}
+          value={inputValue}
+          onChange={(e) => { setInputValue(e.target.value); setLinkError(null); }}
+          placeholder={linkType === 'github' ? 'owner/repo' : 'https://…'}
+          className={`border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-44 ${
+            linkError
+              ? linkError.isWarning ? 'border-amber-400' : 'border-red-400'
               : 'border-gray-300'
           }`}
         />
         <button
           type="submit"
-          disabled={status?.pending || repoChecking || !repo.trim()}
+          disabled={status?.pending || checking || !inputValue.trim()}
           className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
         >
-          {repoChecking ? 'Checking…' : status?.pending ? 'Saving…' : 'Add'}
+          {checking ? 'Checking…' : status?.pending ? 'Saving…' : 'Add'}
         </button>
       </div>
-      {repoChecking ? null : repoError && (
-        <p className={`text-xs ${repoError.isWarning ? 'text-amber-600' : 'text-red-600'}`}>
-          {repoError.message}
+      {!checking && linkError && (
+        <p className={`text-xs ${linkError.isWarning ? 'text-amber-600' : 'text-red-600'}`}>
+          {linkError.message}
         </p>
       )}
-      {status?.ok === false && (
-        <p className="text-xs text-red-600">{status.msg}</p>
-      )}
+      {status?.ok === false && <p className="text-xs text-red-600">{status.msg}</p>}
     </form>
   );
 }

@@ -294,7 +294,6 @@ export default function Mappings() {
                 placeholder="e.g. nginx/nginx"
                 value={newRepo}
                 onChange={(e) => { setNewRepo(e.target.value); setAddLinkError(null); }}
-                onBlur={() => { if (newRepo.trim()) checkRepo(newRepo, setAddLinkError, setAddLinkChecking); }}
                 className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
               />
               {addLinkChecking
@@ -309,7 +308,6 @@ export default function Mappings() {
                 placeholder="e.g. https://wordpress.org/news/category/releases/"
                 value={newUrl}
                 onChange={(e) => { setNewUrl(e.target.value); setAddLinkError(null); }}
-                onBlur={() => { if (newUrl.trim()) checkUrl(newUrl, setAddLinkError, setAddLinkChecking); }}
                 className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
               />
               {addLinkChecking
@@ -393,7 +391,6 @@ export default function Mappings() {
                             value={editRepo}
                             placeholder="owner/repo"
                             onChange={(e) => { setEditRepo(e.target.value); setEditLinkError(null); }}
-                            onBlur={() => { if (editRepo.trim()) checkRepo(editRepo, setEditLinkError, setEditLinkChecking); }}
                             className={`border rounded px-2 py-1 text-xs w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(editLinkError)}`}
                           />
                           {editLinkChecking
@@ -407,7 +404,6 @@ export default function Mappings() {
                             value={editUrl}
                             placeholder="https://…"
                             onChange={(e) => { setEditUrl(e.target.value); setEditLinkError(null); }}
-                            onBlur={() => { if (editUrl.trim()) checkUrl(editUrl, setEditLinkError, setEditLinkChecking); }}
                             className={`border rounded px-2 py-1 text-xs w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(editLinkError)}`}
                           />
                           {editLinkChecking
