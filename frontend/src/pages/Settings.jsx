@@ -163,6 +163,42 @@ export default function Settings() {
     );
   }
 
+  const [pruneModal, setPruneModal]       = useState(null); // { type: 'prune'|'archive', count, days }
+  const [pruneStatus, setPruneStatus]     = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  async function openPruneModal(type) {
+    setPreviewLoading(true);
+    setPruneModal(null);
+    setPruneStatus(null);
+    try {
+      const d = await apiFetch('/settings/prune-preview', { method: 'POST' });
+      setPruneModal({ type, count: d.count, days: d.days });
+    } catch (err) {
+      setPruneStatus({ ok: false, msg: err.message });
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function confirmPrune() {
+    if (!pruneModal) return;
+    const { type } = pruneModal;
+    const endpoint = type === 'archive' ? '/settings/archive-and-prune' : '/settings/prune-now';
+    setPruneModal(null);
+    setPruneStatus({ pending: true });
+    try {
+      const d = await apiFetch(endpoint, { method: 'POST' });
+      if (type === 'archive') {
+        setPruneStatus({ ok: true, msg: `Archived ${d.archived} and deleted ${d.deleted} event${d.deleted !== 1 ? 's' : ''}.` });
+      } else {
+        setPruneStatus({ ok: true, msg: `Deleted ${d.deleted} event${d.deleted !== 1 ? 's' : ''}.` });
+      }
+    } catch (err) {
+      setPruneStatus({ ok: false, msg: err.message });
+    }
+  }
+
   const [webhookStatus, setWebhookStatus] = useState(null);
   const [showSecret, setShowSecret]       = useState(false);
   const [secretCopied, setSecretCopied]   = useState(false);
@@ -365,9 +401,71 @@ export default function Settings() {
           >
             Save
           </button>
+          <button
+            onClick={() => openPruneModal('prune')}
+            disabled={previewLoading}
+            className="border border-red-300 text-red-700 px-4 py-2 rounded text-sm font-medium hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Run Cleanup Now
+          </button>
+          <button
+            onClick={() => openPruneModal('archive')}
+            disabled={previewLoading}
+            className="border border-amber-400 text-amber-700 px-4 py-2 rounded text-sm font-medium hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Archive &amp; Clean
+          </button>
           <StatusMsg status={retentionStatus} />
+          {pruneStatus?.pending && <p className="text-sm text-gray-500">Processing…</p>}
+          {!pruneStatus?.pending && <StatusMsg status={pruneStatus} />}
         </div>
       </Section>
+
+      {/* Prune confirmation modal */}
+      {pruneModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4 space-y-4">
+            <h3 className="font-semibold text-gray-900">
+              {pruneModal.type === 'archive' ? 'Archive & Clean' : 'Run Cleanup Now'}
+            </h3>
+            {pruneModal.days === 0 ? (
+              <p className="text-sm text-gray-600">
+                Retention is disabled (0 days). Save a retention period first.
+              </p>
+            ) : pruneModal.count === 0 ? (
+              <p className="text-sm text-gray-600">
+                No events older than {pruneModal.days} day{pruneModal.days !== 1 ? 's' : ''} to clean up.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {pruneModal.type === 'archive'
+                  ? `This will move ${pruneModal.count} event${pruneModal.count !== 1 ? 's' : ''} older than ${pruneModal.days} day${pruneModal.days !== 1 ? 's' : ''} to the archive, then remove them from the main log.`
+                  : `This will permanently delete ${pruneModal.count} event${pruneModal.count !== 1 ? 's' : ''} older than ${pruneModal.days} day${pruneModal.days !== 1 ? 's' : ''}. This cannot be undone.`}
+              </p>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPruneModal(null)}
+                className="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              {pruneModal.count > 0 && (
+                <button
+                  onClick={confirmPrune}
+                  className={`px-4 py-2 rounded text-sm font-medium text-white ${
+                    pruneModal.type === 'archive'
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {pruneModal.type === 'archive' ? 'Archive & Delete' : 'Delete Events'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

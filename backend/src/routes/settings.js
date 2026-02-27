@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import fetch from 'node-fetch';
-import { getDb } from '../db/index.js';
+import { getDb, getSetting, getPreviewPrune, pruneOldEvents, archiveAndPrune } from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
 
@@ -68,6 +68,47 @@ router.post('/test-email', async (req, res) => {
       text: 'Email notifications are configured correctly.',
     });
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- Retention / Archive ---
+
+router.post('/prune-preview', (req, res) => {
+  try {
+    const days = parseInt(getSetting('retention_days') || '0', 10);
+    if (!days || days <= 0) {
+      return res.json({ ok: true, count: 0, days: 0 });
+    }
+    const count = getPreviewPrune(days);
+    res.json({ ok: true, count, days });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post('/prune-now', (req, res) => {
+  try {
+    const days = parseInt(getSetting('retention_days') || '0', 10);
+    if (!days || days <= 0) {
+      return res.json({ ok: true, deleted: 0, days: 0 });
+    }
+    const deleted = pruneOldEvents(days);
+    res.json({ ok: true, deleted, days });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post('/archive-and-prune', (req, res) => {
+  try {
+    const days = parseInt(getSetting('retention_days') || '0', 10);
+    if (!days || days <= 0) {
+      return res.json({ ok: true, archived: 0, deleted: 0, days: 0 });
+    }
+    const result = archiveAndPrune(days);
+    res.json({ ok: true, ...result, days });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

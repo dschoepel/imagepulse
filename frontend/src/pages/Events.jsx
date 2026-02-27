@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch, validateRepo } from '../api.js';
 
 function StatusBadge({ status }) {
@@ -333,7 +334,12 @@ export default function Events() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+        <Link to="/events/archive" className="text-sm text-indigo-600 hover:underline">
+          View Archive ↗
+        </Link>
+      </div>
 
       {/* Filter bar */}
       <div className="flex gap-3 flex-wrap items-center">

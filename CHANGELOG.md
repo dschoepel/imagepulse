@@ -13,7 +13,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Mappings: search/filter** — filter the mappings table by image name in real time
 - **Mappings: custom pagination** — per-page selector (5, 10, 25, 50, 100) with page navigation and range indicator
 - **Events: custom pagination** — per-page selector (5, 10, 25, 50, 100) persisted to localStorage; pagination bar now shows range indicator (e.g. "26–50 of 142")
+- **Events: View Archive link** — header now includes a "View Archive ↗" link to `/events/archive`
 - **Sidebar version update indicator** — sidebar footer shows `v1.3.6 → v1.4.0` (linked to the release) when a newer GitHub release is available; collapsed mode shows an orange dot on the GitHub icon; checked once on load with a 1-hour server-side cache to avoid GitHub API rate limits (`GET /api/version`)
+- **Event Archive** — new `/events/archive` sub-page lists events moved there by Archive & Clean; read-only with filter, sort, per-page selector (5/10/25/50/100), range indicator, and expandable detail rows; breadcrumb shows `ImagePulse / Events / Archive`
+- **Settings — Event Retention: manual cleanup buttons** — two new buttons alongside Save: **Run Cleanup Now** (permanently deletes events older than the configured retention period) and **Archive & Clean** (copies matching events to the archive table first, then deletes from the main log); both show a confirmation modal with the exact event count before acting; modal explains when retention is disabled (0 days) or nothing qualifies
 
 ### Changed
 

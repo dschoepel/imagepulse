@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import {
   Squares2X2Icon,
@@ -17,11 +17,12 @@ const navItems = [
   { to: '/settings',  label: 'Settings',  Icon: Cog6ToothIcon },
 ];
 
-const PAGE_LABELS = {
-  '/dashboard': 'Dashboard',
-  '/events':    'Events',
-  '/mappings':  'Mappings',
-  '/settings':  'Settings',
+const BREADCRUMB_PATHS = {
+  '/dashboard':      [{ label: 'Dashboard' }],
+  '/events':         [{ label: 'Events' }],
+  '/events/archive': [{ label: 'Events', to: '/events' }, { label: 'Archive' }],
+  '/mappings':       [{ label: 'Mappings' }],
+  '/settings':       [{ label: 'Settings' }],
 };
 
 function GitHubIcon({ className }) {
@@ -34,18 +35,24 @@ function GitHubIcon({ className }) {
 
 function Breadcrumb() {
   const { pathname } = useLocation();
-  const label = PAGE_LABELS[pathname] ?? '';
+  const crumbs = BREADCRUMB_PATHS[pathname] ?? [];
   return (
     <div className="bg-white border-b border-gray-200 px-4 md:px-8 h-14 flex items-center gap-2 text-sm shrink-0">
       <Link to="/dashboard" className="text-gray-400 hover:text-gray-600 transition-colors">
         ImagePulse
       </Link>
-      {label && (
-        <>
+      {crumbs.map((crumb) => (
+        <Fragment key={crumb.label}>
           <span className="text-gray-300">/</span>
-          <span className="text-gray-700 font-medium">{label}</span>
-        </>
-      )}
+          {crumb.to ? (
+            <Link to={crumb.to} className="text-gray-500 hover:text-gray-700 transition-colors">
+              {crumb.label}
+            </Link>
+          ) : (
+            <span className="text-gray-700 font-medium">{crumb.label}</span>
+          )}
+        </Fragment>
+      ))}
     </div>
   );
 }

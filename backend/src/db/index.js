@@ -29,6 +29,23 @@ export function initDb() {
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS event_archive (
+      id                 INTEGER PRIMARY KEY,
+      image              TEXT NOT NULL,
+      tag                TEXT NOT NULL,
+      digest             TEXT,
+      status             TEXT,
+      source             TEXT,
+      raw_payload        TEXT,
+      notified_at        TEXT,
+      created_at         TEXT NOT NULL,
+      notification_title TEXT,
+      notification_body  TEXT,
+      github_release_url TEXT,
+      resolved_version   TEXT,
+      archived_at        TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS mappings (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       image      TEXT NOT NULL UNIQUE,
@@ -202,4 +219,74 @@ export function pruneOldEvents(days) {
     )
     .run(`-${days}`);
   return result.changes;
+}
+
+export function getPreviewPrune(days) {
+  if (!days || days <= 0) return 0;
+  return db
+    .prepare(`SELECT COUNT(*) as cnt FROM events WHERE created_at < datetime('now', ? || ' days')`)
+    .get(`-${days}`).cnt;
+}
+
+export function archiveAndPrune(days) {
+  if (!days || days <= 0) return { archived: 0, deleted: 0 };
+  const run = db.transaction(() => {
+    const copyResult = db.prepare(`
+      INSERT OR IGNORE INTO event_archive
+        (id, image, tag, digest, status, source, raw_payload, notified_at, created_at,
+         notification_title, notification_body, github_release_url, resolved_version)
+      SELECT id, image, tag, digest, status, source, raw_payload, notified_at, created_at,
+             notification_title, notification_body, github_release_url, resolved_version
+      FROM events
+      WHERE created_at < datetime('now', ? || ' days')
+    `).run(`-${days}`);
+    const deleteResult = db.prepare(
+      `DELETE FROM events WHERE created_at < datetime('now', ? || ' days')`
+    ).run(`-${days}`);
+    return { archived: copyResult.changes, deleted: deleteResult.changes };
+  });
+  return run();
+}
+
+const ALLOWED_ARCHIVE_SORT_COLS = new Set(['image', 'tag', 'status', 'source', 'created_at', 'archived_at']);
+
+export function getArchivedEvents({ page = 1, limit = 25, image = '', status = '', sortBy = 'archived_at', sortDir = 'desc' } = {}) {
+  const offset = (page - 1) * limit;
+  const conditions = [];
+  const params = [];
+
+  if (image) {
+    conditions.push('image LIKE ?');
+    params.push(`%${image}%`);
+  }
+  if (status) {
+    conditions.push('status = ?');
+    params.push(status);
+  }
+
+  const col = ALLOWED_ARCHIVE_SORT_COLS.has(sortBy) ? sortBy : 'archived_at';
+  const dir = sortDir === 'asc' ? 'ASC' : 'DESC';
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  params.push(limit, offset);
+
+  return db
+    .prepare(`SELECT * FROM event_archive ${where} ORDER BY ${col} ${dir} LIMIT ? OFFSET ?`)
+    .all(...params);
+}
+
+export function getArchivedEventCount({ image = '', status = '' } = {}) {
+  const conditions = [];
+  const params = [];
+
+  if (image) {
+    conditions.push('image LIKE ?');
+    params.push(`%${image}%`);
+  }
+  if (status) {
+    conditions.push('status = ?');
+    params.push(status);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  return db.prepare(`SELECT COUNT(*) as cnt FROM event_archive ${where}`).get(...params).cnt;
 }
