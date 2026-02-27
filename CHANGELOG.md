@@ -18,6 +18,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - **Sidebar collapse/expand button** — restyled as a small always-visible pill button (`<<` / `>>`); subtle at rest (blends with sidebar), clearly highlighted on hover
+- **Settings — Webhook Security: shared secret field** — added Show/Hide toggle and Copy button alongside the existing Generate button; Copy is disabled when field is empty
+- **Settings — Webhook Security: DIUN config snippets** — replaced the single static code block with two collapsible cards (start closed to save space): "diun.yml standalone config" and "Docker Compose environment variables"; each card has a Copy-to-clipboard button overlaid on the code block; the diun.yml card populates the actual secret value when one is set; the Docker Compose card uses `${DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION}` variable substitution and the description shows the matching `.env` line to add
 
 ### Changed
 

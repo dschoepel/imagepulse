@@ -64,6 +64,48 @@ function Section({ title, children }) {
   );
 }
 
+function SnippetCard({ title, description, snippet }) {
+  const [open, setOpen]     = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(snippet).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-md overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex justify-between items-center px-4 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        <span>{title}</span>
+        <span className="text-gray-400 text-xs ml-2 shrink-0">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-gray-200 px-4 pb-4 pt-3 space-y-2">
+          <p className="text-xs text-gray-500">{description}</p>
+          <div className="relative">
+            <pre className="text-xs bg-gray-900 text-green-300 rounded p-3 overflow-x-auto leading-relaxed">
+              {snippet}
+            </pre>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="absolute top-2 right-2 text-xs bg-gray-700 hover:bg-gray-500 text-gray-300 hover:text-white px-2 py-0.5 rounded transition-colors"
+            >
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Settings() {
   const [s, setS] = useState({});
   const [ntfyStatus, setNtfyStatus] = useState(null);
@@ -122,6 +164,15 @@ export default function Settings() {
   }
 
   const [webhookStatus, setWebhookStatus] = useState(null);
+  const [showSecret, setShowSecret]       = useState(false);
+  const [secretCopied, setSecretCopied]   = useState(false);
+
+  function copySecret() {
+    navigator.clipboard.writeText(s.webhook_secret ?? '').then(() => {
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    }).catch(() => {});
+  }
 
   function generateSecret() {
     const array = new Uint8Array(24);
@@ -217,16 +268,33 @@ export default function Settings() {
           Set a shared secret to require an <code className="bg-gray-100 px-1 rounded">Authorization: Bearer &lt;secret&gt;</code> header
           on all incoming webhooks. Leave blank to allow unauthenticated requests.
         </p>
+
+        {/* Shared Secret field with show/hide + copy + generate */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-600">Shared Secret</label>
           <div className="flex items-center gap-2 w-full max-w-sm">
             <input
-              type="password"
+              type={showSecret ? 'text' : 'password'}
               value={s.webhook_secret ?? ''}
               onChange={(e) => { set('webhook_secret', e.target.value); setWebhookStatus(null); }}
               placeholder="leave blank to disable"
               className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full font-mono"
             />
+            <button
+              type="button"
+              onClick={() => setShowSecret((v) => !v)}
+              className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+            >
+              {showSecret ? 'Hide' : 'Show'}
+            </button>
+            <button
+              type="button"
+              onClick={copySecret}
+              disabled={!s.webhook_secret}
+              className="text-xs text-indigo-600 hover:underline whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {secretCopied ? 'Copied!' : 'Copy'}
+            </button>
             <button
               type="button"
               onClick={generateSecret}
@@ -236,18 +304,41 @@ export default function Settings() {
             </button>
           </div>
         </div>
-        {s.webhook_secret && (
-          <div className="mt-1">
-            <p className="text-xs font-medium text-gray-600 mb-1">DIUN config snippet:</p>
-            <pre className="text-xs bg-gray-900 text-green-300 rounded p-3 overflow-x-auto">{`notif:
+
+        {/* DIUN config snippets */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-600">DIUN configuration snippets</p>
+          <SnippetCard
+            title="diun.yml — standalone config file"
+            description="Add this block to your diun.yml file when running DIUN with a standalone config file (not in a Docker Compose stack)."
+            snippet={
+`notif:
   webhook:
     endpoint: https://your-imagepulse-host/api/webhook
     method: POST
     headers:
       Content-Type: application/json
-      Authorization: "Bearer ${s.webhook_secret}"`}</pre>
-          </div>
-        )}
+      Authorization: "Bearer ${s.webhook_secret || '<your-secret>'}"`
+            }
+          />
+          <SnippetCard
+            title="Docker Compose — environment variable format"
+            description={
+              'Add these environment variables to your DIUN service in docker-compose.yml. ' +
+              'Store the secret in a .env file alongside your compose file as:\n' +
+              'DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION=' + (s.webhook_secret || '<your-secret>')
+            }
+            snippet={
+              '# ── ImagePulse webhook ─────────────────────────────────────\n' +
+              '- DIUN_NOTIF_WEBHOOK_ENDPOINT=https://your-imagepulse-host/api/webhook\n' +
+              '- DIUN_NOTIF_WEBHOOK_METHOD=POST\n' +
+              '- DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE=application/json\n' +
+              '- DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION=Bearer ${DIUN_NOTIF_WEBHOOK_HEADERS_AUTHORIZATION}\n' +
+              '- DIUN_NOTIF_WEBHOOK_TIMEOUT=10s'
+            }
+          />
+        </div>
+
         <div className="flex gap-3 items-center flex-wrap">
           <button
             onClick={() => saveSection(webhookKeys, setWebhookStatus)}
