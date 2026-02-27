@@ -7,6 +7,17 @@ const { version: current } = require('../../package.json');
 
 const router = Router();
 
+// Returns true only when b is strictly newer than a (semver: major.minor.patch)
+function semverGt(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pb[i] || 0) > (pa[i] || 0)) return true;
+    if ((pb[i] || 0) < (pa[i] || 0)) return false;
+  }
+  return false;
+}
+
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 let cache = null; // { data: { latest, latestUrl, hasUpdate }, fetchedAt }
 
@@ -36,7 +47,7 @@ router.get('/', async (_req, res) => {
     const release = await response.json();
     const latest = release.tag_name ? release.tag_name.replace(/^v/, '') : null;
     const latestUrl = release.html_url ?? null;
-    const hasUpdate = latest ? latest !== current : false;
+    const hasUpdate = latest ? semverGt(current, latest) : false;
 
     cache = { data: { latest, latestUrl, hasUpdate }, fetchedAt: Date.now() };
     res.json({ ok: true, current, latest, latestUrl, hasUpdate });
