@@ -121,6 +121,7 @@ If your instance is only reachable through a reverse proxy on an internal Docker
 |----------|---------|-------------|
 | `PORT` | `3579` | Port the app listens on inside the container |
 | `NODE_ENV` | `production` | `development` or `production` |
+| `APP_BASE_URL` | *(empty)* | Public base URL of this instance (e.g. `https://imagepulse.example.com`). Used for the ntfy notification icon. Falls back to the request-derived URL (works behind a reverse proxy), then to the bundled GitHub-hosted icon if neither is publicly reachable. |
 | `PUID` | `1000` | User ID the container process runs as |
 | `PGID` | `1000` | Group ID the container process runs as |
 | `TZ` | `UTC` | Container timezone (e.g. `America/New_York`) |

@@ -15,8 +15,17 @@ const na = v => (v && String(v).trim()) ? String(v).trim() : '(unknown)';
 
 router.post('/', async (req, res) => {
   try {
-    // Derive the public base URL from the incoming request (respects X-Forwarded-Proto via trust proxy)
-    const appBaseUrl = `${req.protocol}://${req.get('host')}`;
+    // Build the icon URL for ntfy:
+    //  1. APP_BASE_URL env var (explicit public URL — best option when DIUN calls ImagePulse
+    //     on an internal Docker network where the derived URL would be unreachable by ntfy).
+    //  2. Request-derived URL (works when behind a reverse proxy that passes X-Forwarded-* headers).
+    //  3. Raw GitHub fallback — always reachable by ntfy as long as it has internet access.
+    const FALLBACK_ICON = 'https://raw.githubusercontent.com/dschoepel/imagepulse/main/frontend/public/favicon.svg';
+    const appBaseUrl = (process.env.APP_BASE_URL || '').replace(/\/$/, '')
+      || `${req.protocol}://${req.get('host')}`;
+    const ntfyIconUrl = appBaseUrl
+      ? `${appBaseUrl}/favicon.ico`
+      : FALLBACK_ICON;
 
     // Validate shared secret if one is configured
     const secret = getSetting('webhook_secret');
@@ -88,7 +97,7 @@ router.post('/', async (req, res) => {
           tags: ntfyTags,
           priority: ntfyPriority,
           clickUrl: releaseNotes?.url ?? null,
-          iconUrl: `${appBaseUrl}/favicon.ico`,
+          iconUrl: ntfyIconUrl,
         });
       } catch (err) {
         logger.error({ err: err.message }, 'ntfy notification failed');
