@@ -47,6 +47,10 @@ export function initDb() {
   try { db.exec('ALTER TABLE events ADD COLUMN github_release_url TEXT'); } catch {}
   try { db.exec('ALTER TABLE events ADD COLUMN resolved_version TEXT'); } catch {}
 
+  // Mappings: add link_type and url columns (safe — ignored if already present)
+  try { db.exec("ALTER TABLE mappings ADD COLUMN link_type TEXT NOT NULL DEFAULT 'github'"); } catch {}
+  try { db.exec('ALTER TABLE mappings ADD COLUMN url TEXT'); } catch {}
+
   return db;
 }
 

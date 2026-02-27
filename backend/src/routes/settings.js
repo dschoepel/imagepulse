@@ -73,7 +73,7 @@ router.post('/test-email', async (req, res) => {
   }
 });
 
-// --- Repo validation ---
+// --- Repo / URL validation ---
 
 router.get('/validate-mapping', async (req, res) => {
   const { repo } = req.query;
@@ -108,6 +108,47 @@ router.get('/validate-mapping', async (req, res) => {
   }
 });
 
+router.get('/validate-url', async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ ok: false, error: 'url query parameter is required' });
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return res.json({ ok: true, urlReachable: false, urlError: 'Invalid URL — must include protocol (e.g. https://)' });
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return res.json({ ok: true, urlReachable: false, urlError: 'URL must use http or https' });
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      headers: { 'User-Agent': 'ImagePulse/1.0' },
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+
+    if (response.ok || response.status === 405) {
+      // 405 Method Not Allowed means the server is there but doesn't support HEAD — treat as reachable
+      return res.json({ ok: true, urlReachable: true });
+    }
+    return res.json({ ok: true, urlReachable: null, urlError: `Server returned ${response.status} — cannot verify` });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return res.json({ ok: true, urlReachable: null, urlError: 'Request timed out — cannot verify' });
+    }
+    return res.json({ ok: true, urlReachable: null, urlError: 'Could not reach URL' });
+  }
+});
+
 // --- Mappings ---
 
 router.get('/mappings', (req, res) => {
@@ -122,12 +163,14 @@ router.get('/mappings', (req, res) => {
 
 router.put('/mappings', (req, res) => {
   try {
-    const { image, repo } = req.body;
-    if (!image || !repo) {
-      return res.status(400).json({ ok: false, error: 'image and repo are required' });
-    }
+    const { image, repo, url, link_type = 'github' } = req.body;
+    if (!image) return res.status(400).json({ ok: false, error: 'image is required' });
+    if (link_type === 'github' && !repo) return res.status(400).json({ ok: false, error: 'repo is required for GitHub mappings' });
+    if (link_type === 'url' && !url) return res.status(400).json({ ok: false, error: 'url is required for URL mappings' });
     const db = getDb();
-    db.prepare('INSERT OR REPLACE INTO mappings (image, repo) VALUES (?, ?)').run(image, repo);
+    db.prepare(
+      'INSERT OR REPLACE INTO mappings (image, repo, url, link_type) VALUES (?, ?, ?, ?)'
+    ).run(image, repo || '', url || '', link_type);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -136,16 +179,21 @@ router.put('/mappings', (req, res) => {
 
 router.patch('/mappings/:image', (req, res) => {
   try {
-    const { newImage, repo } = req.body;
+    const { newImage, repo, url, link_type = 'github' } = req.body;
     const oldImage = req.params.image;
-    if (!repo) return res.status(400).json({ ok: false, error: 'repo is required' });
+    if (link_type === 'github' && !repo) return res.status(400).json({ ok: false, error: 'repo is required for GitHub mappings' });
+    if (link_type === 'url' && !url) return res.status(400).json({ ok: false, error: 'url is required for URL mappings' });
     const db = getDb();
     const update = db.transaction(() => {
       if (newImage && newImage !== oldImage) {
         db.prepare('DELETE FROM mappings WHERE image = ?').run(oldImage);
-        db.prepare('INSERT OR REPLACE INTO mappings (image, repo) VALUES (?, ?)').run(newImage, repo);
+        db.prepare(
+          'INSERT OR REPLACE INTO mappings (image, repo, url, link_type) VALUES (?, ?, ?, ?)'
+        ).run(newImage, repo || '', url || '', link_type);
       } else {
-        db.prepare('UPDATE mappings SET repo = ? WHERE image = ?').run(repo, oldImage);
+        db.prepare(
+          'UPDATE mappings SET repo = ?, url = ?, link_type = ? WHERE image = ?'
+        ).run(repo || '', url || '', link_type, oldImage);
       }
     });
     update();

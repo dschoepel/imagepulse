@@ -30,13 +30,15 @@ router.post('/', async (req, res) => {
     const event = parseWebhook(req);
     const id = insertEvent(event);
 
-    // Look up image→repo mapping
+    // Look up image→repo/url mapping
     const db = getDb();
-    const mapping = db.prepare('SELECT repo FROM mappings WHERE image = ?').get(event.image);
+    const mapping = db.prepare('SELECT * FROM mappings WHERE image = ?').get(event.image);
 
-    // Fetch release notes if mapping exists
+    // Fetch release notes if a GitHub mapping exists; for URL-type mappings use the URL as a click link
     let releaseNotes = null;
-    if (mapping) {
+    if (mapping?.link_type === 'url' && mapping.url) {
+      releaseNotes = { url: mapping.url };
+    } else if (mapping?.repo) {
       releaseNotes = await fetchReleaseNotes(mapping.repo, event.tag);
     }
 
