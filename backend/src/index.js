@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import logger from './logger.js';
 import webhookRouter from './routes/webhook.js';
 import eventsRouter from './routes/events.js';
 import settingsRouter from './routes/settings.js';
@@ -21,9 +22,9 @@ function runRetention() {
   const days = parseInt(getSetting('retention_days') || '0', 10);
   if (days > 0) {
     const deleted = pruneOldEvents(days);
-    console.log(`Retention: pruned ${deleted} event(s) older than ${days} day(s)`);
+    logger.info({ deleted, days }, 'Retention pruned old events');
   } else {
-    console.log('Retention: disabled (retention_days = 0)');
+    logger.info('Retention disabled (retention_days = 0)');
   }
 }
 
@@ -55,7 +56,7 @@ if (fs.existsSync(publicDir)) {
 }
 
 app.listen(PORT, () => {
-  console.log(`ImagePulse listening on port ${PORT}`);
+  logger.info({ port: PORT }, 'ImagePulse listening');
 });
 
 export default app;

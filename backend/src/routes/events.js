@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import logger from '../logger.js';
 import { getEvents, getEventCount, getEventStats, getEventById, getChartData, getSetting } from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
@@ -13,7 +14,7 @@ router.get('/stats', (req, res) => {
     const stats = getEventStats();
     res.json({ ok: true, ...stats, lastUpdated: stats.lastCreatedAt });
   } catch (err) {
-    console.error('Stats error:', err);
+    logger.error({ err }, 'Stats error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -22,7 +23,7 @@ router.get('/chart-data', (req, res) => {
   try {
     res.json({ ok: true, ...getChartData() });
   } catch (err) {
-    console.error('Chart data error:', err);
+    logger.error({ err }, 'Chart data error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -42,7 +43,7 @@ router.get('/', (req, res) => {
 
     res.json({ ok: true, events, pagination: { page, limit, total, pages } });
   } catch (err) {
-    console.error('Events error:', err);
+    logger.error({ err }, 'Events list error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -106,9 +107,10 @@ router.post('/:id/resend', async (req, res) => {
       } catch (e) { errors.push(`email: ${e.message}`); }
     }
     if (errors.length) return res.status(500).json({ ok: false, error: errors.join('; ') });
+    logger.info({ id: ev.id }, 'Notification resent');
     res.json({ ok: true });
   } catch (err) {
-    console.error('Resend error:', err);
+    logger.error({ err }, 'Resend error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });

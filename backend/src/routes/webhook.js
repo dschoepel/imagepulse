@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import logger from '../logger.js';
 import { parseWebhook } from '../adapters/index.js';
 import { insertEvent, markNotified, getSetting, pruneOldEvents, getDb } from '../db/index.js';
 import { fetchReleaseNotes } from '../services/github.js';
@@ -90,7 +91,7 @@ router.post('/', async (req, res) => {
           iconUrl: `${appBaseUrl}/favicon.ico`,
         });
       } catch (err) {
-        console.error('ntfy notification failed:', err.message);
+        logger.error({ err: err.message }, 'ntfy notification failed');
       }
     }
 
@@ -110,23 +111,25 @@ router.post('/', async (req, res) => {
         });
         await sendEmail({ subject, text: emailBody, html });
       } catch (err) {
-        console.error('Email notification failed:', err.message);
+        logger.error({ err: err.message }, 'Email notification failed');
       }
     }
 
     // Store the full base body (no truncation) in the DB
     markNotified(id, title, baseBody, releaseNotes?.url ?? null, resolvedVersion);
 
+    logger.info({ id, image: event.image, tag: event.tag, status: event.status }, 'Webhook processed');
+
     // Prune old events if retention is configured
     const retentionDays = parseInt(getSetting('retention_days') || '0', 10);
     if (retentionDays > 0) {
       const deleted = pruneOldEvents(retentionDays);
-      if (deleted > 0) console.log(`Pruned ${deleted} old event(s)`);
+      if (deleted > 0) logger.info({ deleted }, 'Pruned old events after webhook');
     }
 
     res.status(202).json({ ok: true, id, event });
   } catch (err) {
-    console.error('Webhook error:', err);
+    logger.error({ err }, 'Webhook error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });

@@ -1,6 +1,8 @@
 // Registry digest → version tag lookup service.
 // Resolves a `latest` digest to a semver tag by querying the registry's tag list.
 
+import logger from '../logger.js';
+
 const _cache = new Map();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
@@ -199,7 +201,7 @@ export async function resolveVersionTag(image, digest) {
     setCached(cacheKey, result);
     return result;
   } catch (err) {
-    console.warn(`Registry version lookup failed for ${image}:`, err.message);
+    logger.warn({ image, err: err.message }, 'Registry version lookup failed');
     return null;
   }
 }

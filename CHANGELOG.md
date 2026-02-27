@@ -18,6 +18,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Event Archive** — new `/events/archive` sub-page lists events moved there by Archive & Clean; read-only with filter, sort, per-page selector (5/10/25/50/100), range indicator, and expandable detail rows; breadcrumb shows `ImagePulse / Events / Archive`
 - **Settings — Event Retention: manual cleanup buttons** — two new buttons alongside Save: **Run Cleanup Now** (permanently deletes events older than the configured retention period) and **Archive & Clean** (copies matching events to the archive table first, then deletes from the main log); both show a confirmation modal with the exact event count before acting; modal explains when retention is disabled (0 days) or nothing qualifies
 
+- **Structured logging (pino)** — all `console.log/error/warn` calls replaced with a pino logger; log level controlled via `LOG_LEVEL` env var (default `info`); optional append-mode file output via `LOG_FILE` env var; each log line is JSON with structured fields (e.g. `{ id, image, tag, status }` on webhook events)
+
 ### Changed
 
 - **Sidebar collapse/expand button** — restyled as a small always-visible pill button (`<<` / `>>`); subtle at rest (blends with sidebar), clearly highlighted on hover
