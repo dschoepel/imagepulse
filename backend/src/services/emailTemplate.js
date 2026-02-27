@@ -32,7 +32,7 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
             Release Notes${releaseLabel ? ` — ${escHtml(releaseLabel)}` : ''}
           </p>
           ${releaseNotes.body ? `<pre style="margin:0 0 12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;line-height:1.5;color:#374151;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${escHtml(releaseNotes.body)}</pre>` : ''}
-          ${releaseNotes.url ? `<a href="${escAttr(releaseNotes.url)}" style="display:inline-block;padding:8px 16px;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:4px;font-size:13px;font-weight:500;">View on GitHub ↗</a>` : ''}
+          ${releaseNotes.url ? `<a href="${escAttr(releaseNotes.url)}" style="display:inline-block;padding:8px 16px;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:4px;font-size:13px;font-weight:500;">View Release Notes ↗</a>` : ''}
         </td></tr>
       </table>
     </td></tr>` : '';

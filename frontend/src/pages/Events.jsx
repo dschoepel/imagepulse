@@ -199,7 +199,7 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
               <dd>
                 {ev.github_release_url
                   ? <a href={ev.github_release_url} target="_blank" rel="noreferrer"
-                       className="text-indigo-600 hover:underline text-xs">View on GitHub ↗</a>
+                       className="text-indigo-600 hover:underline text-xs">View Release Notes ↗</a>
                   : <span className="text-gray-400">—</span>}
               </dd>
             </div>
