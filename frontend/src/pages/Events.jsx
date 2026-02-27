@@ -250,16 +250,21 @@ export default function Events() {
   const [status, setStatus] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortDir, setSortDir] = useState('desc');
+  const [perPage, setPerPage] = useState(() => {
+    try { return Number(localStorage.getItem('events-per-page')) || 25; } catch { return 25; }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [mappings, setMappings] = useState({}); // { image: repo }
+  const [mappings, setMappings] = useState({}); // { image: displayValue }
 
   useEffect(() => {
     apiFetch('/settings/mappings')
       .then((d) => {
         const m = {};
-        d.mappings.forEach(({ image, repo }) => { m[image] = repo; });
+        d.mappings.forEach((mapping) => {
+          m[mapping.image] = mapping.link_type === 'url' ? mapping.url : mapping.repo;
+        });
         setMappings(m);
       })
       .catch(() => {});
@@ -267,7 +272,7 @@ export default function Events() {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ page, limit: 25, sortBy, sortDir });
+    const params = new URLSearchParams({ page, limit: perPage, sortBy, sortDir });
     if (image) params.set('image', image);
     if (status) params.set('status', status);
 
@@ -279,7 +284,7 @@ export default function Events() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, image, status, sortBy, sortDir]);
+  }, [page, perPage, image, status, sortBy, sortDir]);
 
   function handleFilterChange() {
     setPage(1);
@@ -305,6 +310,13 @@ export default function Events() {
     setMappings((prev) => ({ ...prev, [img]: repo }));
   }
 
+  function handlePerPageChange(n) {
+    try { localStorage.setItem('events-per-page', String(n)); } catch {}
+    setPerPage(n);
+    setPage(1);
+    setExpandedId(null);
+  }
+
   const pages = pagination.pages;
 
   function pageNumbers() {
@@ -324,7 +336,7 @@ export default function Events() {
       <h1 className="text-2xl font-bold text-gray-900">Events</h1>
 
       {/* Filter bar */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap items-center">
         <input
           type="text"
           placeholder="Filter by image…"
@@ -341,7 +353,16 @@ export default function Events() {
           <option value="new">new</option>
           <option value="update">update</option>
         </select>
-        <span className="text-sm text-gray-400 self-center">{pagination.total} total</span>
+        <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
+          <span>Rows:</span>
+          <select
+            value={perPage}
+            onChange={(e) => handlePerPageChange(Number(e.target.value))}
+            className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            {[5, 10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
       </div>
 
       {error && <p className="text-red-600 text-sm">Error: {error}</p>}
@@ -382,8 +403,8 @@ export default function Events() {
                     <td className="px-2 sm:px-4 py-3 max-w-[80px] sm:max-w-xs">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="font-mono text-xs text-gray-700 truncate">{ev.image}</span>
-                        {ev.image in mappings && (
-                          <span className="shrink-0 w-2 h-2 rounded-full bg-green-500" title="GitHub repo mapped" />
+                        {mappings[ev.image] && (
+                          <span className="shrink-0 w-2 h-2 rounded-full bg-green-500" title="Repo mapped" />
                         )}
                       </div>
                     </td>
@@ -415,7 +436,11 @@ export default function Events() {
 
       {/* Pagination */}
       {pages > 1 && (
-        <div className="flex items-center gap-1 justify-center">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <span className="text-sm text-gray-500">
+            {pagination.total === 0 ? '0' : `${(page - 1) * perPage + 1}–${Math.min(page * perPage, pagination.total)}`} of {pagination.total}
+          </span>
+          <div className="flex items-center gap-1">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
@@ -447,6 +472,7 @@ export default function Events() {
           >
             Next
           </button>
+          </div>
         </div>
       )}
     </div>

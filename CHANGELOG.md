@@ -12,6 +12,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Mappings: Release Notes URL type** — mappings can now link to any URL (e.g. `https://wordpress.org/news/category/releases/`) for images that don't have a GitHub repo; toggled via a "GitHub Repo / Release Notes URL" radio selector on the add/edit form; URL-type mappings are validated for reachability; the URL is used as the ntfy click link and email button for that image
 - **Mappings: search/filter** — filter the mappings table by image name in real time
 - **Mappings: custom pagination** — per-page selector (5, 10, 25, 50, 100) with page navigation and range indicator
+- **Events: custom pagination** — per-page selector (5, 10, 25, 50, 100) persisted to localStorage; pagination bar now shows range indicator (e.g. "26–50 of 142")
 
 ### Changed
 
