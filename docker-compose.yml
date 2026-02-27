@@ -45,6 +45,11 @@ services:
       - PORT=${PORT:-3579}
       # Timezone — set TZ in .env (e.g. America/New_York)
       - TZ=${TZ:-UTC}
+      # Log verbosity: trace | debug | info | warn | error | fatal (default: info)
+      # - LOG_LEVEL=info
+      # Write logs to a file inside the container in addition to stdout.
+      # The data directory is already mounted, so this path works out of the box.
+      # - LOG_FILE=/app/data/imagepulse.log
 
     env_file:
       # Loads remaining settings (ntfy, SMTP, GitHub token, retention,

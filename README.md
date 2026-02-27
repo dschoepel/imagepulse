@@ -8,9 +8,10 @@ A self-hosted webhook receiver and notification hub for Docker image update even
 ## Features
 
 - **Dashboard** — live stat cards (total events, images tracked, last updated), bar charts for events over the last 14 days and top images by event count, and a clickable recent-events table that pops up notification details
-- **Events log** — filterable, sortable, paginated table of all received events with expandable detail rows showing notification content, full digest, platform, GitHub release link, and a Resend button; mapped images are indicated with a green dot and unmapped images can be mapped inline from the detail row
-- **Mappings** — map Docker image names to GitHub repos so ImagePulse can fetch release notes; rows support inline editing (change image name or repo without deleting and re-adding)
-- **Settings** — configure ntfy and email notification channels with Show/Hide toggles on tokens and passwords; send test notifications to verify configuration
+- **Events log** — filterable, sortable, paginated table (5/10/25/50/100 rows, persisted) with range indicator; expandable detail rows showing notification content, full digest, platform, version, release link, and a Resend button; mapped images show a green dot; unmapped images can be mapped inline (GitHub Repo or Release Notes URL)
+- **Event Archive** — events moved from the main log by **Archive & Clean** land in a searchable, sortable, read-only archive at `/events/archive`
+- **Mappings** — map Docker image names to a GitHub repo (for release notes) or a Release Notes URL; search/filter by image name; custom per-page selector; inline editing; unmapped images can be mapped directly from the Events detail row
+- **Settings** — configure ntfy and email channels with test buttons; Webhook Security with optional shared-secret auth, Show/Hide/Copy controls, and ready-to-paste DIUN config snippets; Event Retention with manual **Run Cleanup Now** and **Archive & Clean** buttons (show affected count before acting)
 
 ## Quick Start
 
@@ -139,40 +140,82 @@ If your instance is only reachable through a reverse proxy on an internal Docker
 | `GITHUB_TOKEN` | *(empty)* | GitHub PAT for fetching release notes (increases rate limit) |
 | `RETENTION_DAYS` | `90` | Days to keep events (0 = keep forever) |
 | `WEBHOOK_SECRET` | *(empty)* | Shared secret — requires `Authorization: Bearer <secret>` on all incoming webhooks; leave blank to allow unauthenticated requests |
+| `LOG_LEVEL` | `info` | Log verbosity: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
+| `LOG_FILE` | *(empty)* | Append logs to this file path in addition to stdout; leave blank for stdout only (e.g. `/app/data/imagepulse.log`) |
 
 ## Mappings
 
-Mappings link a Docker image name (as reported by DIUN) to a GitHub repository (`owner/repo`). When a webhook arrives for a mapped image, ImagePulse calls the GitHub Releases API to fetch release notes for the matching tag.
+Mappings link a Docker image name (as reported by DIUN) to either a **GitHub repo** or a **Release Notes URL**.
 
-**When to add a mapping:** any time you want release notes included in your notifications and event detail. For images published directly from GitHub (most open-source tools do this), a mapping lets ImagePulse show you what changed in that update.
+### GitHub Repo mapping
 
-**What they unlock:**
+Enter the repo as `owner/repo` (e.g. `nginxinc/docker-nginx`). When a webhook arrives for a mapped image, ImagePulse calls the GitHub Releases API to fetch release notes for the matching tag.
+
+**What it unlocks:**
 - The notification body includes the first 300 characters of the GitHub release notes
-- The event detail panel shows a "View on GitHub ↗" link to the exact release page
+- The event detail panel shows a **View Release Notes ↗** link to the exact GitHub release page
+- ntfy notification tap opens the release page directly
 
-**Format:** the Docker image name must match exactly what DIUN sends (e.g. `docker.io/library/nginx` or `ghcr.io/cli/cli`). The repo field is `owner/repo` on GitHub (e.g. `nginxinc/docker-nginx` or `cli/cli`).
+### Release Notes URL mapping
 
-You can add, edit, or delete mappings from the **Mappings** page without restarting the server.
+For images that don't have a GitHub repo (e.g. MariaDB, WordPress), you can map to any reachable URL instead (e.g. `https://mariadb.com/kb/en/release-notes/`). The URL is used as the ntfy click link and the email button — no release notes text is fetched.
+
+### Image name format
+
+The Docker image name must match **exactly** what DIUN sends. For Docker Hub official images this is `docker.io/library/<name>` (e.g. `docker.io/library/nginx`, `docker.io/library/mariadb`). For other registries: `ghcr.io/cli/cli`, `docker.io/linuxserver/sonarr`, etc.
+
+> **Tip:** check the **Events** page first — the Image column shows the exact string DIUN reported. Copy it directly from there.
+
+You can add, edit, or delete mappings from the **Mappings** page without restarting the server. Unmapped images can also be mapped directly from the expandable detail row on the Events page.
 
 ## Notifications
 
 Each notification contains:
-- **Title:** `Image updated: <image>:<tag>`
+- **Title:** `<hostname>: <image>:<tag> - has been updated` (or `is new`)
 - **Status:** `new` (first time seen) or `update` (digest changed)
 - **Digest:** first 12 characters of the content digest
 - **Platform:** OS/architecture if reported by DIUN
-- **Release notes excerpt:** first 300 characters of the GitHub release body (only for mapped images)
+- **Version:** resolved semver tag for `latest`-tagged images (e.g. `v1.4.0`), looked up from the registry
+- **Release notes excerpt:** first 300 characters of the GitHub release body (GitHub Repo mappings only)
+
+ntfy notifications use the app favicon as the notification icon and open the release/URL link on tap. Emails render a structured HTML layout with a metadata table, release notes block, and a **View Release Notes ↗** button.
 
 From the Events page you can expand any event that has stored notification content and click **Resend Notification** to re-deliver it through the currently configured channels (ntfy and/or email).
 
 ## Settings
 
-Configure notification channels from the **Settings** page:
+Configure everything from the **Settings** page:
 
-- **ntfy** — enter your ntfy server URL, topic, and optional access token. Use the "Test" button to send a verification notification.
-- **Email (SMTP)** — enter SMTP host, port, TLS mode, credentials, sender and recipient addresses. Use the "Test" button to send a verification email.
+- **ntfy** — server URL, topic, optional access token; Show/Hide toggle on the token; **Send test** button.
+- **Email (SMTP)** — host, port, TLS mode, credentials, sender, and one or more comma-separated recipient addresses; Show/Hide toggle on the password; **Send test** button.
+- **Webhook Security** — optional shared secret (`Authorization: Bearer <secret>`); Show/Hide, Copy, and Generate controls; collapsible ready-to-paste DIUN config snippets for both `diun.yml` and Docker Compose environment-variable formats.
+- **Event Retention** — set the number of days to keep events (0 = keep forever). Two manual action buttons with count preview:
+  - **Run Cleanup Now** — permanently deletes events older than the configured period.
+  - **Archive & Clean** — moves matching events to the Event Archive first, then removes them from the main log.
 
-Sensitive fields (tokens, passwords) have a Show/Hide toggle so they are masked by default.
+Sensitive fields (tokens, passwords, webhook secret) have Show/Hide toggles so they are masked by default.
+
+## Logging
+
+ImagePulse uses [pino](https://getpino.io) for structured JSON logging to stdout.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOG_LEVEL` | `info` | Verbosity: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
+| `LOG_FILE` | *(empty)* | Also append logs to this path (e.g. `/app/data/imagepulse.log`) |
+
+In Docker, logs are captured by the container runtime and visible via `docker logs imagepulse`. To persist logs to a file, set `LOG_FILE` to a path inside the already-mounted `data` directory:
+
+```yaml
+# docker-compose.yml — uncomment under environment:
+# - LOG_FILE=/app/data/imagepulse.log
+```
+
+Each log line is newline-delimited JSON. Pipe through [`pino-pretty`](https://github.com/pinojs/pino-pretty) for human-readable output during development:
+
+```bash
+node src/index.js | npx pino-pretty
+```
 
 ## Webhook Setup
 
