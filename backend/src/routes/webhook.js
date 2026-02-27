@@ -14,6 +14,9 @@ const na = v => (v && String(v).trim()) ? String(v).trim() : '(unknown)';
 
 router.post('/', async (req, res) => {
   try {
+    // Derive the public base URL from the incoming request (respects X-Forwarded-Proto via trust proxy)
+    const appBaseUrl = `${req.protocol}://${req.get('host')}`;
+
     // Validate shared secret if one is configured
     const secret = getSetting('webhook_secret');
     if (secret) {
@@ -59,12 +62,13 @@ router.post('/', async (req, res) => {
       ? `${baseBody}\n\n${releaseNotes.body.slice(0, 300)}`
       : baseBody;
 
-    // ntfy tags and priority — status-aware
-    const ntfyTags     = event.status === 'new' ? ['whale', 'white_check_mark'] : ['whale', 'arrows_counterclockwise'];
+    // ntfy tags and priority — status-aware (no whale; icon header used instead)
+    const ntfyTags     = event.status === 'new' ? ['white_check_mark'] : ['arrows_counterclockwise'];
     const ntfyPriority = event.status === 'new' ? 3 : 4;
 
     // Notification title (ntfy) and email subject
-    const title   = `Image updated: ${event.image}:${event.tag}`;
+    const statusPhrase = event.status === 'new' ? 'is new' : 'has been updated';
+    const title   = `${hostname}: ${event.image}:${event.tag} - ${statusPhrase}`;
     const subject = `[ImagePulse] ${title}`;
 
     // Email plain-text fallback
@@ -81,6 +85,7 @@ router.post('/', async (req, res) => {
           tags: ntfyTags,
           priority: ntfyPriority,
           clickUrl: releaseNotes?.url ?? null,
+          iconUrl: `${appBaseUrl}/favicon.ico`,
         });
       } catch (err) {
         console.error('ntfy notification failed:', err.message);
@@ -99,6 +104,7 @@ router.post('/', async (req, res) => {
           platform,
           resolvedVersion,
           releaseNotes,
+          appBaseUrl,
         });
         await sendEmail({ subject, text: emailBody, html });
       } catch (err) {

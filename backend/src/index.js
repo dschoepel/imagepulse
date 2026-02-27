@@ -30,6 +30,9 @@ setInterval(runRetention, 24 * 60 * 60 * 1000);
 
 const app = express();
 
+// Trust the first proxy (nginx/Traefik/Caddy) so req.protocol reflects X-Forwarded-Proto
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 

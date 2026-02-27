@@ -53,8 +53,11 @@ router.post('/:id/resend', async (req, res) => {
     if (!ev) return res.status(404).json({ ok: false, error: 'Event not found' });
     if (!ev.notification_title) return res.status(400).json({ ok: false, error: 'No notification content stored' });
 
-    // Derive tags and priority from stored status
-    const ntfyTags     = ev.status === 'new' ? ['whale', 'white_check_mark'] : ['whale', 'arrows_counterclockwise'];
+    // Derive the public base URL from the incoming request (respects X-Forwarded-Proto via trust proxy)
+    const appBaseUrl = `${req.protocol}://${req.get('host')}`;
+
+    // Derive tags and priority from stored status (no whale; icon header used instead)
+    const ntfyTags     = ev.status === 'new' ? ['white_check_mark'] : ['arrows_counterclockwise'];
     const ntfyPriority = ev.status === 'new' ? 3 : 4;
 
     const errors = [];
@@ -66,6 +69,7 @@ router.post('/:id/resend', async (req, res) => {
           tags:     ntfyTags,
           priority: ntfyPriority,
           clickUrl: ev.github_release_url ?? null,
+          iconUrl:  `${appBaseUrl}/favicon.ico`,
         });
       } catch (e) { errors.push(`ntfy: ${e.message}`); }
     }
@@ -91,6 +95,7 @@ router.post('/:id/resend', async (req, res) => {
           platform,
           resolvedVersion: ev.resolved_version ?? null,
           releaseNotes,
+          appBaseUrl,
         });
 
         await sendEmail({

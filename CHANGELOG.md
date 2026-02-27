@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — v1.4.0 in progress
+
+### Changed
+
+- **ntfy notification title** — new format: `[Host]: [image:tag] - [status phrase]` (e.g. `myserver: docker.io/library/nginx:latest - has been updated`); status phrase is "has been updated" or "is new"
+- **ntfy notification icon** — replaced the `:whale:` emoji tag with the app's favicon served from the running instance (`/favicon.ico`); icon URL is derived from the incoming request so it works correctly behind a reverse proxy
+- **Email notification header** — replaced the 🐳 whale emoji with the app favicon (`<img>` tag); heading now shows `[Hostname] / [image:tag]` at larger (20 px) bold font; hostname subtitle line removed
+- **Email metadata labels** — `Status`, `Digest`, `Platform`, and `Version` labels are now bold and include a colon separator (e.g. `Status:   update`)
+- **Reverse proxy support** — added `trust proxy 1` to Express so `req.protocol` correctly reflects HTTPS when running behind nginx/Traefik/Caddy
+
+---
+
 ## [1.3.6] — 2026-02-26
 
 ### Added

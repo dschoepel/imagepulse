@@ -1,9 +1,9 @@
 /**
  * Build an HTML email for an image update notification.
- * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, resolvedVersion?: string|null, releaseNotes?: { name?: string, body?: string, url?: string }|null }} params
+ * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, resolvedVersion?: string|null, releaseNotes?: { name?: string, body?: string, url?: string }|null, appBaseUrl?: string }} params
  * @returns {string} HTML string
  */
-export function buildEmailHtml({ image, tag, status, hostname, digest, platform, resolvedVersion, releaseNotes }) {
+export function buildEmailHtml({ image, tag, status, hostname, digest, platform, resolvedVersion, releaseNotes, appBaseUrl = '' }) {
   const isNew = status === 'new';
   const statusLabel = isNew ? 'NEW' : 'UPDATE';
   const badgeColor  = isNew ? '#16a34a' : '#d97706';
@@ -19,7 +19,7 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
 
   const metaRows = rows.map(([label, value]) => `
     <tr>
-      <td style="padding:6px 12px 6px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">${label}</td>
+      <td style="padding:6px 12px 6px 0;font-weight:700;color:#374151;font-size:13px;white-space:nowrap;vertical-align:top;">${label}:</td>
       <td style="padding:6px 0;color:#111827;font-size:13px;word-break:break-all;">${escHtml(value)}</td>
     </tr>`).join('');
 
@@ -50,10 +50,9 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="color:#ffffff;">
-              <span style="font-size:18px;">🐳</span>
-              <span style="font-size:16px;font-weight:700;color:#ffffff;margin-left:8px;">${escHtml(image)}:${escHtml(tag)}</span>
-              <br>
-              <span style="font-size:12px;color:#c7d2fe;margin-left:26px;">${escHtml(hostname)}</span>
+              <img src="${escAttr(appBaseUrl)}/favicon.ico" alt="" width="24" height="24"
+                   style="vertical-align:middle;margin-right:8px;border-radius:3px;" />
+              <span style="font-size:20px;font-weight:700;color:#ffffff;vertical-align:middle;">${escHtml(hostname)} / ${escHtml(image)}:${escHtml(tag)}</span>
             </td>
             <td align="right" style="vertical-align:top;">
               <span style="display:inline-block;padding:4px 10px;background:${badgeColor};color:#ffffff;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;">${statusLabel}</span>
