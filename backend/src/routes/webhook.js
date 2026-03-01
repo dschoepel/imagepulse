@@ -21,6 +21,16 @@ router.post('/', async (req, res) => {
     //  3. Raw GitHub SVG — zero-config fallback; works if ntfy can reach github
     // NOTE: the request-derived URL is NOT used here — it is typically an internal
     // Docker address (e.g. http://imagepulse:3579) that the ntfy server cannot reach.
+    // appBaseUrl — used by the email template for the favicon <img> src
+    const appBaseUrl = (process.env.APP_BASE_URL || '').replace(/\/$/, '')
+      || `${req.protocol}://${req.get('host')}`;
+
+    // ntfy icon URL (priority order):
+    //  1. NTFY_ICON_URL — explicit publicly reachable PNG/JPG/ICO
+    //  2. APP_BASE_URL/favicon.ico — if the public base URL is configured
+    //  3. GitHub-hosted SVG — zero-config fallback
+    // The request-derived URL is NOT used here; it is typically an internal
+    // Docker address (e.g. http://imagepulse:3579) that ntfy cannot reach.
     const ntfyIconUrl =
       process.env.NTFY_ICON_URL?.trim() ||
       (process.env.APP_BASE_URL?.trim()
