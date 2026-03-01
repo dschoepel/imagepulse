@@ -10,6 +10,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - **ntfy notification icon — dead-code fallback** — the GitHub SVG fallback was never reached because the request-derived URL (e.g. `http://imagepulse:3579`) was always truthy; the icon was silently sent as an internal Docker address that ntfy cannot fetch. Rewrote icon resolution: `NTFY_ICON_URL` (new) → `APP_BASE_URL/favicon.ico` → GitHub-hosted SVG fallback; the request-derived URL is no longer used for the icon
+- **ntfy icon missing on Resend** — the resend endpoint in `events.js` still used the old hardcoded `appBaseUrl/favicon.ico`; updated to use the same `NTFY_ICON_URL` → `APP_BASE_URL` → GitHub SVG priority chain as the webhook handler
+- **Email notification failed on webhook** — `appBaseUrl` was accidentally removed when rewriting the ntfy icon logic, causing `appBaseUrl is not defined` and a failed email on every incoming webhook
+- **ARM64 Docker build — QEMU illegal instruction** — `npm ci` under QEMU ARM64 emulation crashed because Node.js 20's JIT compiler uses CPU instructions that QEMU doesn't support; fixed by adding `--platform=$BUILDPLATFORM` to the build stages so `npm ci` runs natively, and compiling the `better-sqlite3` native addon for the target arch in the production stage via `npm rebuild`
 - **Version update indicator — false positive** — sidebar showed a downgrade arrow (e.g. `v1.4.1 → v1.4.0`) when the running version was ahead of the latest published GitHub release; replaced string `!==` comparison with a proper semver comparison so `hasUpdate` is only true when the GitHub release is strictly newer
 - **Mobile responsiveness — Events & Event Archive** — table wrappers now scroll horizontally on narrow screens (`overflow-x-auto`) instead of clipping content; timestamp columns show date-only on mobile (< 640 px) and full datetime on wider screens
 
