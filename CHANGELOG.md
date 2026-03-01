@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.2] — 2026-03-01
+
+### Fixed
+
+- **ntfy notification icon — dead-code fallback** — the GitHub SVG fallback was never reached because the request-derived URL (e.g. `http://imagepulse:3579`) was always truthy; the icon was silently sent as an internal Docker address that ntfy cannot fetch. Rewrote icon resolution: `NTFY_ICON_URL` (new) → `APP_BASE_URL/favicon.ico` → GitHub-hosted SVG fallback; the request-derived URL is no longer used for the icon
+- **Version update indicator — false positive** — sidebar showed a downgrade arrow (e.g. `v1.4.1 → v1.4.0`) when the running version was ahead of the latest published GitHub release; replaced string `!==` comparison with a proper semver comparison so `hasUpdate` is only true when the GitHub release is strictly newer
+- **Mobile responsiveness — Events & Event Archive** — table wrappers now scroll horizontally on narrow screens (`overflow-x-auto`) instead of clipping content; timestamp columns show date-only on mobile (< 640 px) and full datetime on wider screens
+
+### Added
+
+- **`NTFY_ICON_URL` env var** — explicitly set the ntfy notification icon to any publicly reachable PNG/JPG/ICO URL; documented in `.env.example`, `docker-compose.yml`, and README
+- **`APP_BASE_URL` env var** — public base URL used for the ntfy icon when `NTFY_ICON_URL` is not set; documented in `.env.example`, `docker-compose.yml`, and README
+
+### Changed
+
+- **`docker-compose.yml` — full env var pass-through** — all settings (ntfy, SMTP, GitHub, retention, webhook secret, logging, etc.) now listed in the `environment:` block with `${VAR:-default}` syntax; Portainer and other container managers that inject variables via their UI no longer require a separate `.env` file on the host; `DB_PATH` and `LOG_FILE` defaults updated to absolute container paths (`/app/data/...`)
+- **CI — `latest` image tag on version push** — `latest` was previously only applied when pushing to `main`; changed to `ref_type == 'tag'` so every `vX.Y.Z` tag push also updates `latest` in GHCR
+
+---
+
 ## [1.4.1] — 2026-02-27
 
 ### Fixed
