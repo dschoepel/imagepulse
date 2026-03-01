@@ -45,9 +45,12 @@ services:
       - PORT=${PORT:-3579}
       # Timezone — set TZ in .env (e.g. America/New_York)
       - TZ=${TZ:-UTC}
-      # Public base URL — used for the ntfy notification icon. Falls back to
-      # the request-derived URL (reverse proxy), then to a GitHub-hosted icon.
-      # Set this when DIUN calls ImagePulse directly on an internal network.
+      # ntfy notification icon — must be a publicly reachable PNG/JPG/ICO URL.
+      # Falls back to APP_BASE_URL/favicon.ico, then to a GitHub-hosted SVG.
+      # Set this when neither of those URLs is reachable by the ntfy server.
+      # - NTFY_ICON_URL=https://img.example.com/imagepulse-icon.png
+      # Public base URL — used for the ntfy icon if NTFY_ICON_URL is not set.
+      # Set when DIUN calls ImagePulse directly on an internal Docker network.
       # Example: https://imagepulse.example.com  or  http://192.168.1.10:3579
       # - APP_BASE_URL=https://imagepulse.example.com
       # Log verbosity: trace | debug | info | warn | error | fatal (default: info)

@@ -130,6 +130,7 @@ If your instance is only reachable through a reverse proxy on an internal Docker
 | `NTFY_URL` | `https://ntfy.sh` | ntfy server base URL |
 | `NTFY_TOPIC` | `imagepulse` | ntfy topic to publish to |
 | `NTFY_TOKEN` | *(empty)* | ntfy access token (if required) |
+| `NTFY_ICON_URL` | *(empty)* | Publicly reachable URL to a PNG/JPG/ICO used as the ntfy notification icon. Falls back to `APP_BASE_URL/favicon.ico` if set, then to a GitHub-hosted SVG. |
 | `EMAIL_ENABLED` | `false` | Set `true` to enable email notifications on first run |
 | `SMTP_HOST` | *(empty)* | SMTP server hostname |
 | `SMTP_PORT` | `587` | SMTP server port |
