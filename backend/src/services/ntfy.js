@@ -14,7 +14,7 @@ export async function sendNtfy({ title, body, tags = [], priority = 3, clickUrl 
   if (!topic) throw new Error('NTFY_TOPIC is not configured');
 
   const headers = {
-    'Content-Type': 'text/plain',
+    'Content-Type': 'text/markdown',
     'Title':    title,
     'Tags':     tags.join(','),
     'Priority': String(priority),

@@ -4,9 +4,10 @@
 
 ## [1.4.4] — 2026-03-29
 
-### Email: formatted release notes
+### Formatted release notes in notifications
 
 - **Markdown rendering in email** — release notes body now rendered as formatted HTML (headings, bold, lists, code, links) via `marked`; previously showed raw markdown text inside a `<pre>` block
+- **Markdown rendering in ntfy** — notification body `Content-Type` changed from `text/plain` to `text/markdown`; the ntfy app now renders bold, lists, headings, and inline code natively
 
 ---
 
