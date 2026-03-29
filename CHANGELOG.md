@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.3] — 2026-03-29
+
+### Added
+
+- **Mappings: host tracking** — each mapping row now shows pill badges for every hostname that has generated an event for that Docker image; hostnames are derived from `events.raw_payload` (no schema change); badges appear automatically as new events arrive
+- **Mappings: filter by host** — a host dropdown appears in the filter bar when any mappings have known hosts; selecting a host narrows the list to mappings seen on that host; has its own Clear button
+
+### Changed
+
+- **Mappings: Add form → modal** — the Add Image Mapping form is now a modal opened via an `+ Add Mapping` button in the page header; closes on backdrop click or Escape key; the filter bar is now the first element on the page followed directly by the mappings table
+- **Mappings: table columns** — added a `Hosts` column between `Link` and the action buttons; shows `—` for images with no events yet
+- **Mappings: page width** — widened from `max-w-3xl` to `max-w-5xl` to accommodate the new Hosts column
+
+---
+
 ## [1.4.2] — 2026-03-01
 
 ### Fixed

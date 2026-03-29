@@ -195,7 +195,23 @@ router.get('/validate-url', async (req, res) => {
 router.get('/mappings', (req, res) => {
   try {
     const db = getDb();
-    const mappings = db.prepare('SELECT * FROM mappings ORDER BY image').all();
+    const rows = db.prepare(`
+      SELECT m.*,
+        (
+          SELECT GROUP_CONCAT(DISTINCT TRIM(json_extract(e.raw_payload, '$.hostname')))
+          FROM events e
+          WHERE e.image = m.image
+            AND json_extract(e.raw_payload, '$.hostname') IS NOT NULL
+            AND TRIM(json_extract(e.raw_payload, '$.hostname')) != ''
+            AND TRIM(json_extract(e.raw_payload, '$.hostname')) != '(unknown)'
+        ) AS hosts_csv
+      FROM mappings m
+      ORDER BY m.image
+    `).all();
+    const mappings = rows.map(({ hosts_csv, ...m }) => ({
+      ...m,
+      hosts: hosts_csv ? hosts_csv.split(',').map((h) => h.trim()).filter(Boolean) : [],
+    }));
     res.json({ ok: true, mappings });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

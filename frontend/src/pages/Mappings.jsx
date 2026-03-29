@@ -100,60 +100,41 @@ function LinkCell({ m }) {
   );
 }
 
+function HostPills({ hosts }) {
+  if (!hosts || hosts.length === 0) {
+    return <span className="text-gray-300 text-xs">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {hosts.map((h) => (
+        <span key={h} className="inline-block bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded border border-gray-200">
+          {h}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Add Mapping Modal ─────────────────────────────────────────────────────────
 
-export default function Mappings() {
-  const [mappings, setMappings]   = useState([]);
-  const [error, setError]         = useState(null);
-  const [filter, setFilter]       = useState('');
-  const [perPage, setPerPage]     = useState(25);
-  const [page, setPage]           = useState(1);
+function AddMappingModal({ onClose, onAdded }) {
+  const [newImage,        setNewImage]        = useState('');
+  const [newLinkType,     setNewLinkType]     = useState('github');
+  const [newRepo,         setNewRepo]         = useState('');
+  const [newUrl,          setNewUrl]          = useState('');
+  const [addImageError,   setAddImageError]   = useState(null);
+  const [addLinkError,    setAddLinkError]    = useState(null);
+  const [addLinkChecking, setAddLinkChecking] = useState(false);
+  const [addError,        setAddError]        = useState(null);
 
-  // Add-form state
-  const [newImage,         setNewImage]         = useState('');
-  const [newLinkType,      setNewLinkType]      = useState('github');
-  const [newRepo,          setNewRepo]          = useState('');
-  const [newUrl,           setNewUrl]           = useState('');
-  const [addImageError,    setAddImageError]    = useState(null);
-  const [addLinkError,     setAddLinkError]     = useState(null);
-  const [addLinkChecking,  setAddLinkChecking]  = useState(false);
-  const [addError,         setAddError]         = useState(null);
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  // Edit state
-  const [editingId,        setEditingId]        = useState(null);
-  const [editImage,        setEditImage]        = useState('');
-  const [editLinkType,     setEditLinkType]     = useState('github');
-  const [editRepo,         setEditRepo]         = useState('');
-  const [editUrl,          setEditUrl]          = useState('');
-  const [editImageError,   setEditImageError]   = useState(null);
-  const [editLinkError,    setEditLinkError]    = useState(null);
-  const [editLinkChecking, setEditLinkChecking] = useState(false);
-  const [editSaveError,    setEditSaveError]    = useState(null);
-
-  function load() {
-    apiFetch('/settings/mappings')
-      .then((d) => setMappings(d.mappings))
-      .catch((err) => setError(err.message));
-  }
-  useEffect(() => { load(); }, []);
-
-  // Reset to page 1 when filter changes
-  useEffect(() => { setPage(1); }, [filter]);
-
-  // ── Derived list ────────────────────────────────────────────────────────────
-  const filtered = mappings.filter(
-    (m) => !filter || m.image.toLowerCase().includes(filter.toLowerCase())
-  );
-  const totalPages  = Math.max(1, Math.ceil(filtered.length / perPage));
-  const safePage    = Math.min(page, totalPages);
-  const pageStart   = (safePage - 1) * perPage;
-  const paginated   = filtered.slice(pageStart, pageStart + perPage);
-  const rangeStart  = filtered.length === 0 ? 0 : pageStart + 1;
-  const rangeEnd    = Math.min(pageStart + perPage, filtered.length);
-
-  // ── Add ─────────────────────────────────────────────────────────────────────
   async function handleAdd(e) {
     e.preventDefault();
     const imgErr = validateImage(newImage);
@@ -178,11 +159,142 @@ export default function Mappings() {
           link_type: newLinkType,
         }),
       });
-      setNewImage(''); setNewRepo(''); setNewUrl('');
-      setAddImageError(null); setAddLinkError(null);
-      load();
+      onAdded();
     } catch (err) { setAddError(err.message); }
   }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900">Add Image Mapping</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          >×</button>
+        </div>
+
+        <form onSubmit={handleAdd} className="space-y-4">
+          {/* Docker image */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Docker image</label>
+            <input
+              type="text"
+              placeholder="e.g. docker.io/library/nginx"
+              value={newImage}
+              onChange={(e) => { setNewImage(e.target.value); setAddImageError(null); }}
+              onBlur={() => setAddImageError(validateImage(newImage))}
+              className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addImageError)}`}
+            />
+            <FieldError err={addImageError} />
+          </div>
+
+          {/* Link type toggle + conditional input */}
+          <div className="flex flex-col gap-2">
+            <RadioGroup value={newLinkType} onChange={(v) => { setNewLinkType(v); setAddLinkError(null); }} />
+            {newLinkType === 'github' ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">GitHub repo (owner/repo)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. nginx/nginx"
+                  value={newRepo}
+                  onChange={(e) => { setNewRepo(e.target.value); setAddLinkError(null); }}
+                  className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addLinkError)}`}
+                />
+                {addLinkChecking
+                  ? <p className="text-xs text-gray-400 mt-1">Checking GitHub…</p>
+                  : <FieldError err={addLinkError} />}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Release notes URL</label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://wordpress.org/news/category/releases/"
+                  value={newUrl}
+                  onChange={(e) => { setNewUrl(e.target.value); setAddLinkError(null); }}
+                  className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addLinkError)}`}
+                />
+                {addLinkChecking
+                  ? <p className="text-xs text-gray-400 mt-1">Checking URL…</p>
+                  : <FieldError err={addLinkError} />}
+              </div>
+            )}
+          </div>
+
+          {addError && <p className="text-red-600 text-xs">{addError}</p>}
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+            >Cancel</button>
+            <button
+              type="submit"
+              disabled={addLinkChecking}
+              className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
+            >Add Mapping</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function Mappings() {
+  const [mappings, setMappings]   = useState([]);
+  const [error, setError]         = useState(null);
+  const [filter, setFilter]       = useState('');
+  const [hostFilter, setHostFilter] = useState('');
+  const [perPage, setPerPage]     = useState(25);
+  const [page, setPage]           = useState(1);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Edit state
+  const [editingId,        setEditingId]        = useState(null);
+  const [editImage,        setEditImage]        = useState('');
+  const [editLinkType,     setEditLinkType]     = useState('github');
+  const [editRepo,         setEditRepo]         = useState('');
+  const [editUrl,          setEditUrl]          = useState('');
+  const [editImageError,   setEditImageError]   = useState(null);
+  const [editLinkError,    setEditLinkError]    = useState(null);
+  const [editLinkChecking, setEditLinkChecking] = useState(false);
+  const [editSaveError,    setEditSaveError]    = useState(null);
+
+  function load() {
+    apiFetch('/settings/mappings')
+      .then((d) => setMappings(d.mappings))
+      .catch((err) => setError(err.message));
+  }
+  useEffect(() => { load(); }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filter, hostFilter]);
+
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const allHosts = [...new Set(mappings.flatMap((m) => m.hosts || []))].sort();
+
+  const filtered = mappings.filter((m) => {
+    const imageMatch = !filter || m.image.toLowerCase().includes(filter.toLowerCase());
+    const hostMatch  = !hostFilter || (m.hosts || []).includes(hostFilter);
+    return imageMatch && hostMatch;
+  });
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage    = Math.min(page, totalPages);
+  const pageStart   = (safePage - 1) * perPage;
+  const paginated   = filtered.slice(pageStart, pageStart + perPage);
+  const rangeStart  = filtered.length === 0 ? 0 : pageStart + 1;
+  const rangeEnd    = Math.min(pageStart + perPage, filtered.length);
 
   // ── Delete ──────────────────────────────────────────────────────────────────
   async function handleDelete(image) {
@@ -250,79 +362,22 @@ export default function Mappings() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900">Image → Repo Mappings</h1>
+    <div className="space-y-6 max-w-5xl">
 
-      {/* Add form */}
-      <form onSubmit={handleAdd} className="bg-white rounded-lg shadow p-4 space-y-3">
-        <div className="flex flex-wrap gap-3 items-start">
-          {/* Docker image */}
-          <div className="flex flex-col gap-1 flex-1 min-w-0 w-full sm:min-w-[220px]">
-            <label className="text-xs font-medium text-gray-600">Docker image</label>
-            <input
-              type="text"
-              placeholder="e.g. docker.io/library/nginx"
-              value={newImage}
-              onChange={(e) => { setNewImage(e.target.value); setAddImageError(null); }}
-              onBlur={() => setAddImageError(validateImage(newImage))}
-              className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addImageError)}`}
-            />
-            <FieldError err={addImageError} />
-          </div>
-
-          {/* Submit button */}
-          <div className="flex flex-col gap-1">
-            <span className="text-xs invisible select-none hidden sm:block" aria-hidden="true">x</span>
-            <button
-              type="submit"
-              disabled={addLinkChecking}
-              className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-
-        {/* Link type toggle + conditional input */}
-        <div className="flex flex-col gap-2">
-          <RadioGroup value={newLinkType} onChange={(v) => { setNewLinkType(v); setAddLinkError(null); }} />
-          {newLinkType === 'github' ? (
-            <div className="flex flex-col gap-1 w-full max-w-sm">
-              <label className="text-xs font-medium text-gray-600">GitHub repo (owner/repo)</label>
-              <input
-                type="text"
-                placeholder="e.g. nginx/nginx"
-                value={newRepo}
-                onChange={(e) => { setNewRepo(e.target.value); setAddLinkError(null); }}
-                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
-              />
-              {addLinkChecking
-                ? <p className="text-xs text-gray-400 mt-1">Checking GitHub…</p>
-                : <FieldError err={addLinkError} />}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1 w-full max-w-sm">
-              <label className="text-xs font-medium text-gray-600">Release notes URL</label>
-              <input
-                type="url"
-                placeholder="e.g. https://wordpress.org/news/category/releases/"
-                value={newUrl}
-                onChange={(e) => { setNewUrl(e.target.value); setAddLinkError(null); }}
-                className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full ${borderClass(addLinkError)}`}
-              />
-              {addLinkChecking
-                ? <p className="text-xs text-gray-400 mt-1">Checking URL…</p>
-                : <FieldError err={addLinkError} />}
-            </div>
-          )}
-        </div>
-
-        {addError && <p className="text-red-600 text-xs">{addError}</p>}
-      </form>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Image → Repo Mappings</h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-indigo-700 whitespace-nowrap"
+        >
+          + Add Mapping
+        </button>
+      </div>
 
       {error && <p className="text-red-600 text-sm">Error: {error}</p>}
 
-      {/* Search + per-page */}
+      {/* Filter row */}
       <div className="flex items-center gap-3 flex-wrap">
         <input
           type="text"
@@ -333,6 +388,21 @@ export default function Mappings() {
         />
         {filter && (
           <button onClick={() => setFilter('')} className="text-xs text-gray-400 hover:text-gray-600">
+            Clear
+          </button>
+        )}
+        {allHosts.length > 0 && (
+          <select
+            value={hostFilter}
+            onChange={(e) => setHostFilter(e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">All hosts</option>
+            {allHosts.map((h) => <option key={h} value={h}>{h}</option>)}
+          </select>
+        )}
+        {hostFilter && (
+          <button onClick={() => setHostFilter('')} className="text-xs text-gray-400 hover:text-gray-600">
             Clear
           </button>
         )}
@@ -353,7 +423,7 @@ export default function Mappings() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {['Image', 'Link', ''].map((h, i) => (
+              {['Image', 'Link', 'Hosts', ''].map((h, i) => (
                 <th key={i} className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">
                   {h}
                 </th>
@@ -363,8 +433,8 @@ export default function Mappings() {
           <tbody className="divide-y divide-gray-100">
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-6 text-center text-gray-400">
-                  {filter ? 'No mappings match your filter' : 'No mappings yet'}
+                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                  {filter || hostFilter ? 'No mappings match your filter' : 'No mappings yet'}
                 </td>
               </tr>
             ) : (
@@ -413,6 +483,9 @@ export default function Mappings() {
                       )}
                     </td>
                     <td className="px-4 py-2 align-top">
+                      <HostPills hosts={m.hosts || []} />
+                    </td>
+                    <td className="px-4 py-2 align-top">
                       {editSaveError && <p className="text-xs text-red-600 mb-1">{editSaveError}</p>}
                       <div className="flex gap-3 whitespace-nowrap">
                         <button
@@ -432,6 +505,7 @@ export default function Mappings() {
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-700">{m.image}</td>
                     <td className="px-4 py-3"><LinkCell m={m} /></td>
+                    <td className="px-4 py-3"><HostPills hosts={m.hosts || []} /></td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <button
                         onClick={() => startEdit(m)}
@@ -484,6 +558,14 @@ export default function Mappings() {
             >Next</button>
           </div>
         </div>
+      )}
+
+      {/* Add Mapping Modal */}
+      {showAddModal && (
+        <AddMappingModal
+          onClose={() => setShowAddModal(false)}
+          onAdded={() => { setShowAddModal(false); load(); }}
+        />
       )}
     </div>
   );
