@@ -7,7 +7,7 @@ A self-hosted webhook receiver and notification hub for Docker image update even
 - **Dashboard** — live stat cards (total events, images tracked, last updated), bar charts for events over the last 14 days and top images by event count, and a clickable recent-events table that pops up notification details
 - **Events log** — filterable, sortable, paginated table (5/10/25/50/100 rows, persisted) with range indicator; expandable detail rows showing notification content, full digest, platform, version, release link, and a Resend button; mapped images show a green dot; unmapped images can be mapped inline (GitHub Repo or Release Notes URL)
 - **Event Archive** — events moved from the main log by **Archive & Clean** land in a searchable, sortable, read-only archive at `/events/archive`
-- **Mappings** — map Docker image names to a GitHub repo (for release notes) or a Release Notes URL; search/filter by image name; custom per-page selector; inline editing; unmapped images can be mapped directly from the Events detail row
+- **Mappings** — map Docker image names to a GitHub repo (for release notes) or a Release Notes URL; each mapping displays which hosts have reported events for that image; filter by image name or hostname; custom per-page selector; inline editing; add via modal or inline from the Events detail row
 - **Settings** — configure ntfy and email channels with test buttons; Webhook Security with optional shared-secret auth, Show/Hide/Copy controls, and ready-to-paste DIUN config snippets; Event Retention with manual **Run Cleanup Now** and **Archive & Clean** buttons (show affected count before acting)
 
 ## Quick Start
@@ -177,7 +177,7 @@ Each notification contains:
 - **Version:** resolved semver tag for `latest`-tagged images (e.g. `v1.4.0`), looked up from the registry
 - **Release notes excerpt:** first 300 characters of the GitHub release body (GitHub Repo mappings only)
 
-ntfy notifications use the app favicon as the notification icon and open the release/URL link on tap. Emails render a structured HTML layout with a metadata table, release notes block, and a **View Release Notes ↗** button.
+ntfy notifications use the app favicon as the notification icon and open the release/URL link on tap. Emails render a structured HTML layout with a metadata table, formatted release notes (markdown rendered to HTML — headings, bold, lists, code), and a **View Release Notes ↗** button.
 
 From the Events page you can expand any event that has stored notification content and click **Resend Notification** to re-deliver it through the currently configured channels (ntfy and/or email).
 

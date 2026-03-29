@@ -2,8 +2,6 @@ name: Docker Build & Push
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
 
@@ -37,8 +35,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
-            type=sha,prefix=sha-
+            type=raw,value=latest
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 

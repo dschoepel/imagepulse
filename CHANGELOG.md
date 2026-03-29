@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Email release notes — raw markdown** — release notes body was rendered inside a `<pre>` block with HTML-escaped text, showing raw markdown symbols (`##`, `**`, `-`) verbatim; replaced with `marked.parse()` so headings, bold, lists, code spans, and links render as formatted HTML; scoped CSS added to the email `<head>` for all standard markdown elements; adds `marked@^17` to backend dependencies
+
+---
+
 ## [1.4.3] — 2026-03-29
 
 ### Added

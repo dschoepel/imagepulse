@@ -6,3 +6,4 @@ dist/
 *.db-wal
 data/
 !data/.gitkeep
+.claude/settings.local.json
