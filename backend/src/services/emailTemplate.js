@@ -1,3 +1,5 @@
+import { marked } from 'marked';
+
 /**
  * Build an HTML email for an image update notification.
  * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, resolvedVersion?: string|null, releaseNotes?: { name?: string, body?: string, url?: string }|null, appBaseUrl?: string }} params
@@ -31,7 +33,7 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
           <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#111827;">
             Release Notes${releaseLabel ? ` — ${escHtml(releaseLabel)}` : ''}
           </p>
-          ${releaseNotes.body ? `<pre style="margin:0 0 12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;line-height:1.5;color:#374151;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${escHtml(releaseNotes.body)}</pre>` : ''}
+          ${releaseNotes.body ? `<div class="rn" style="margin:0 0 12px;">${marked.parse(releaseNotes.body)}</div>` : ''}
           ${releaseNotes.url ? `<a href="${escAttr(releaseNotes.url)}" style="display:inline-block;padding:8px 16px;background:#4f46e5;color:#ffffff;text-decoration:none;border-radius:4px;font-size:13px;font-weight:500;">View Release Notes ↗</a>` : ''}
         </td></tr>
       </table>
@@ -39,7 +41,23 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+.rn h1,.rn h2{font-size:16px;font-weight:700;margin:12px 0 6px;color:#111827;border-bottom:1px solid #e5e7eb;padding-bottom:4px;}
+.rn h3,.rn h4{font-size:14px;font-weight:700;margin:10px 0 4px;color:#374151;}
+.rn p{margin:0 0 8px;font-size:13px;line-height:1.5;color:#374151;}
+.rn ul,.rn ol{margin:0 0 8px;padding-left:20px;font-size:13px;color:#374151;}
+.rn li{margin-bottom:3px;line-height:1.5;}
+.rn code{background:#f3f4f6;padding:1px 4px;border-radius:3px;font-family:monospace;font-size:12px;color:#111827;}
+.rn pre{background:#f3f4f6;padding:10px 12px;border-radius:4px;font-size:12px;margin:0 0 8px;overflow-x:auto;}
+.rn pre code{background:none;padding:0;}
+.rn a{color:#4f46e5;}
+.rn strong{font-weight:700;}
+.rn em{font-style:italic;}
+.rn blockquote{border-left:3px solid #d1d5db;margin:0 0 8px 0;padding:2px 12px;color:#6b7280;}
+.rn hr{border:none;border-top:1px solid #e5e7eb;margin:10px 0;}
+</style>
+</head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
   <tr><td align="center">
