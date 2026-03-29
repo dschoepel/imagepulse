@@ -2,7 +2,7 @@
 
 ---
 
-## [Unreleased]
+## [1.4.4] — 2026-03-29
 
 ### Email: formatted release notes
 
