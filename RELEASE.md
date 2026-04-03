@@ -2,6 +2,17 @@
 
 ---
 
+## [1.4.5] — 2026-04-03
+
+### Notification title and body format improvements
+
+- **Shorter notification title** — ntfy and email subject now use the short image name (last `/`-separated segment) instead of the fully qualified image path: `hostname:imageName has been updated/added` (e.g. `myhost:myapp has been updated`)
+- **Full image path moved to body** — a new `Image:` line (fully qualified `image:tag`) is inserted between `Status:` and `Digest:` in the ntfy body, email plain-text, and stored notification body
+- **Email header updated** — the blue header bar now shows `hostname:imageName` to match the ntfy title format
+- **Email metadata row added** — `Image:` row (full `image:tag`) appears between `Status:` and `Digest:` in the email metadata table
+
+---
+
 ## [1.4.4] — 2026-03-29
 
 ### Formatted release notes in notifications

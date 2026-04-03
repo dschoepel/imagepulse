@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.5] — 2026-04-03
+
+### Changed
+
+- **Notification title — short image name** — ntfy title and email subject now use the short image name (last `/`-separated segment of the fully qualified image path) instead of the full path; format is `hostname:imageName has been updated` or `hostname:imageName has been added` (e.g. `myhost:myapp has been updated`); falls back to full image name when there is no `/`
+- **Notification body — `Image:` line added** — a new `Image: <fully-qualified-image>:<tag>` line is inserted between `Status:` and `Digest:` in the ntfy body, email plain-text fallback, and stored notification body, making the full image path visible in the body rather than the title
+- **Email header bar** — heading updated from `hostname / image:tag` to `hostname:imageName` to match the ntfy title format
+- **Email metadata table — `Image:` row added** — `Image: <fully-qualified-image>:<tag>` row inserted between `Status:` and `Digest:` in the HTML email metadata table
+
+---
+
 ## [1.4.4] — 2026-03-29
 
 ### Fixed

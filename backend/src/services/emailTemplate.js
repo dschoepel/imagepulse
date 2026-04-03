@@ -5,13 +5,15 @@ import { marked } from 'marked';
  * @param {{ image: string, tag: string, status: string, hostname: string, digest: string, platform: string, resolvedVersion?: string|null, releaseNotes?: { name?: string, body?: string, url?: string }|null, appBaseUrl?: string }} params
  * @returns {string} HTML string
  */
-export function buildEmailHtml({ image, tag, status, hostname, digest, platform, resolvedVersion, releaseNotes, appBaseUrl = '' }) {
+export function buildEmailHtml({ image, imageName, tag, status, hostname, digest, platform, resolvedVersion, releaseNotes, appBaseUrl = '' }) {
   const isNew = status === 'new';
   const statusLabel = isNew ? 'NEW' : 'UPDATE';
   const badgeColor  = isNew ? '#16a34a' : '#d97706';
+  const displayImageName = imageName || image.split('/').pop();
 
   const rows = [
     ['Status',   status],
+    ['Image',    `${image}:${tag}`],
     ['Digest',   digest],
     ['Platform', platform],
   ];
@@ -70,7 +72,7 @@ export function buildEmailHtml({ image, tag, status, hostname, digest, platform,
             <td style="color:#ffffff;">
               <img src="${escAttr(appBaseUrl)}/favicon.ico" alt="" width="24" height="24"
                    style="vertical-align:middle;margin-right:8px;border-radius:3px;" />
-              <span style="font-size:20px;font-weight:700;color:#ffffff;vertical-align:middle;">${escHtml(hostname)} / ${escHtml(image)}:${escHtml(tag)}</span>
+              <span style="font-size:20px;font-weight:700;color:#ffffff;vertical-align:middle;">${escHtml(hostname)}:${escHtml(displayImageName)}</span>
             </td>
             <td align="right" style="vertical-align:top;">
               <span style="display:inline-block;padding:4px 10px;background:${badgeColor};color:#ffffff;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;">${statusLabel}</span>

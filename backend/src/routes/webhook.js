@@ -73,9 +73,10 @@ router.post('/', async (req, res) => {
     const platform    = na(event.rawPayload?.platform);
     const digestShort = na((event.digest || '').slice(0, 12) || '');
     const status      = na(event.status);
+    const imageName   = event.image.split('/').pop();
 
     // Base body (stored in DB — no release notes text, no truncation)
-    let baseBody = `Host: ${hostname}\nStatus: ${status}\nDigest: ${digestShort}\nPlatform: ${platform}`;
+    let baseBody = `Host: ${hostname}\nStatus: ${status}\nImage: ${event.image}:${event.tag}\nDigest: ${digestShort}\nPlatform: ${platform}`;
     if (resolvedVersion) baseBody += `\nVersion: ${resolvedVersion}`;
     baseBody += '\nvia ImagePulse';
 
@@ -89,8 +90,8 @@ router.post('/', async (req, res) => {
     const ntfyPriority = event.status === 'new' ? 3 : 4;
 
     // Notification title (ntfy) and email subject
-    const statusPhrase = event.status === 'new' ? 'is new' : 'has been updated';
-    const title   = `${hostname}: ${event.image}:${event.tag} - ${statusPhrase}`;
+    const statusPhrase = event.status === 'new' ? 'has been added' : 'has been updated';
+    const title   = `${hostname}:${imageName} ${statusPhrase}`;
     const subject = `[ImagePulse] ${title}`;
 
     // Email plain-text fallback
@@ -119,6 +120,7 @@ router.post('/', async (req, res) => {
       try {
         const html = buildEmailHtml({
           image:        event.image,
+          imageName,
           tag:          event.tag,
           status,
           hostname,
