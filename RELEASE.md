@@ -2,6 +2,16 @@
 
 ---
 
+## [1.4.6] — 2026-04-04
+
+### Notification title and body formatting polish
+
+- **Hostname/image name separator** — title now reads `hostname: imageName` (space after colon) in both ntfy title and email subject; previously `hostname:imageName` with no space
+- **Bold image name in ntfy body** — the `Image:` line in the ntfy notification body now renders the short image name in bold markdown (`**imageName**`); e.g. `Image: ghcr.io/linuxserver/**swag**:latest`
+- **Bold image name in email header** — the blue header bar wraps the image name in `<strong>` so it renders bold in HTML email clients
+
+---
+
 ## [1.4.5] — 2026-04-03
 
 ### Notification title and body format improvements
