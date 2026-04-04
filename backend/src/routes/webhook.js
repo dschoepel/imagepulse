@@ -80,10 +80,17 @@ router.post('/', async (req, res) => {
     if (resolvedVersion) baseBody += `\nVersion: ${resolvedVersion}`;
     baseBody += '\nvia ImagePulse';
 
-    // ntfy body — append release notes truncated to 300 chars
+    // ntfy body — uses markdown bold for imageName; kept separate from baseBody (DB/email plain text)
+    const imagePrefix = event.image.lastIndexOf('/') >= 0
+      ? event.image.slice(0, event.image.lastIndexOf('/') + 1)
+      : '';
+    let ntfyBaseBody = `Host: ${hostname}\nStatus: ${status}\nImage: ${imagePrefix}**${imageName}**:${event.tag}\nDigest: ${digestShort}\nPlatform: ${platform}`;
+    if (resolvedVersion) ntfyBaseBody += `\nVersion: ${resolvedVersion}`;
+    ntfyBaseBody += '\nvia ImagePulse';
+
     const ntfyBody = releaseNotes?.body
-      ? `${baseBody}\n\n${releaseNotes.body.slice(0, 300)}`
-      : baseBody;
+      ? `${ntfyBaseBody}\n\n${releaseNotes.body.slice(0, 300)}`
+      : ntfyBaseBody;
 
     // ntfy tags and priority — status-aware (no whale; icon header used instead)
     const ntfyTags     = event.status === 'new' ? ['white_check_mark'] : ['arrows_counterclockwise'];
@@ -91,7 +98,7 @@ router.post('/', async (req, res) => {
 
     // Notification title (ntfy) and email subject
     const statusPhrase = event.status === 'new' ? 'has been added' : 'has been updated';
-    const title   = `${hostname}:${imageName} ${statusPhrase}`;
+    const title   = `${hostname}: ${imageName} ${statusPhrase}`;
     const subject = `[ImagePulse] ${title}`;
 
     // Email plain-text fallback

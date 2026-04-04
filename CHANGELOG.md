@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.6] — 2026-04-04
+
+### Changed
+
+- **Notification title separator** — ntfy title and email subject now read `hostname: imageName` (space after colon) instead of `hostname:imageName`; applies to both `has been updated` and `has been added` variants
+- **ntfy body — bold image name** — the `Image:` line in the ntfy notification body now wraps the short image name in markdown bold (`**imageName**`), e.g. `Image: ghcr.io/linuxserver/**swag**:latest`; stored body (DB / email plain-text) is unchanged to avoid markdown syntax in non-markdown contexts
+- **Email header — bold image name** — the `<span>` in the blue header bar now wraps `displayImageName` in `<strong>` so it renders bold in HTML email clients
+
+---
+
 ## [1.4.5] — 2026-04-03
 
 ### Changed

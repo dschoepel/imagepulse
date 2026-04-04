@@ -72,7 +72,7 @@ export function buildEmailHtml({ image, imageName, tag, status, hostname, digest
             <td style="color:#ffffff;">
               <img src="${escAttr(appBaseUrl)}/favicon.ico" alt="" width="24" height="24"
                    style="vertical-align:middle;margin-right:8px;border-radius:3px;" />
-              <span style="font-size:20px;font-weight:700;color:#ffffff;vertical-align:middle;">${escHtml(hostname)}:${escHtml(displayImageName)}</span>
+              <span style="font-size:20px;font-weight:700;color:#ffffff;vertical-align:middle;">${escHtml(hostname)}: <strong>${escHtml(displayImageName)}</strong></span>
             </td>
             <td align="right" style="vertical-align:top;">
               <span style="display:inline-block;padding:4px 10px;background:${badgeColor};color:#ffffff;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;">${statusLabel}</span>
