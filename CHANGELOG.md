@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.5.1] — 2026-06-08
+
+### Fixed
+
+- **`docker.io/` prefix in image refs** — `parseImageRef` now strips the `docker.io/` prefix before parsing, so images stored as `docker.io/library/nginx` correctly resolve to the Docker Hub API instead of returning a 404
+- **`normalizeTag` false positives** — changed the regex from an unanchored substring match to an anchored match (`^(?:version-)?v?`); channel tags like `stable-alpine3.23-slim` and `trixie-slim` no longer extract a spurious version number, eliminating false "major update available" notifications
+- **Docker Hub tag ordering** — switched `fetchHubTags` from `ordering=name` (alphabetical descending) to `ordering=last_updated` (newest first); both linuxserver-style (`version-34.0.0`) and library-style (`1.31.1`) version tags now surface on page 1 instead of being buried alphabetically
+- **Silent 404 on tag fetch** — `fetchHubTags` previously returned an empty array (not `null`) when Docker Hub returned a non-OK response on the first page; now returns `null` so the warning is logged and no spurious "no newer tag" result is stored
+- **ntfy title non-ASCII character** — `→` (U+2192) in the notification title caused an `Invalid character in header content` error because ntfy sends the title as an HTTP header; replaced with `->` (ASCII)
+
+### Changed
+
+- **Cross-major version gap reporting** — `analyzeVersions` (formerly `findNewerSameMajor`) now tracks both the newest tag within the pinned major version line and the newest tag overall; notifications include both when a cross-major gap exists (e.g. pinned `32.0.0`, patch `32.0.11`, major `34.0.0` available)
+- **Notification title format** — `imageName: pinnedVersion -> newerVersion` for same-major updates; `imageName: pinnedVersion -> newerVersion (overallNewest available)` when a higher major also exists; `imageName: major update available (overallNewest)` when already at latest in pinned major
+- **Notification body format** — body now shows `Newest in X.x: <tag>` / `Up to date in X.x` and optionally `Newest overall: <tag>` lines instead of a single `Newer: <tag>` line
+- **Dedup key** — `pinned_tag_notified` now stores `newestOverall || newerSameMajor` (most significant newer tag) so re-notification fires when either the cross-major newest or the same-major newest changes
+
+---
+
 ## [1.5.0] — 2026-06-08
 
 ### Added

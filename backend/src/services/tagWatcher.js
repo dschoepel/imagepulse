@@ -5,10 +5,11 @@ import { sendEmail } from './email.js';
 import { parseImageRef } from './registry.js';
 
 function normalizeTag(tag) {
-  // Match the first numeric version substring with at least two segments.
-  // Handles prefixes like "version-", "v", "amd64-", and suffixes like "-ls436".
-  // e.g. "version-29.0.1" → "29.0.1", "v1.2.3" → "1.2.3", "48" → null
-  const m = /(\d+\.\d+(?:\.\d+)*)/.exec(tag);
+  // Anchored match: tag must START with an optional "version-" prefix, optional "v", then digits.
+  // Rejects channel tags like "stable-alpine3.23" where the version number is incidental.
+  // e.g. "version-29.0.1" → "29.0.1", "v1.2.3" → "1.2.3", "1.31.1-alpine3.23" → "1.31.1"
+  //      "stable-alpine3.23" → null, "trixie-slim" → null, "48" → null
+  const m = /^(?:version-)?v?(\d+\.\d+(?:\.\d+)*)/.exec(tag);
   return m ? m[1] : null;
 }
 
@@ -25,14 +26,15 @@ function compareSemver(a, b) {
 
 async function fetchHubTags(namespace, name) {
   try {
-    // ordering=name surfaces versioned tags (e.g. "version-34.0.0") before build-number-only tags
-    let url = `https://hub.docker.com/v2/repositories/${namespace}/${name}/tags?page_size=100&ordering=name`;
+    // ordering=last_updated (newest first) surfaces recently-released version tags on page 1
+    // for both linuxserver-style (version-34.0.0) and library-style (1.31.1-alpine3.23) images
+    let url = `https://hub.docker.com/v2/repositories/${namespace}/${name}/tags?page_size=100&ordering=last_updated`;
     let pages = 0;
     const tags = [];
     while (url && pages < 5) {
       pages++;
       const res = await fetch(url);
-      if (!res.ok) break;
+      if (!res.ok) { if (pages === 1) return null; break; }
       const data = await res.json();
       for (const t of data.results || []) tags.push(t.name);
       url = data.next || null;
@@ -90,25 +92,32 @@ async function fetchOciTags(host, imagePath) {
   }
 }
 
-function findNewerSameMajor(pinnedTag, allTags) {
+function analyzeVersions(pinnedTag, allTags) {
   const pinnedNorm = normalizeTag(pinnedTag);
-  if (!pinnedNorm) return null;
+  if (!pinnedNorm) return { newerSameMajor: null, newestOverall: null };
   const pinnedMajor = Number(pinnedNorm.split('.')[0]);
 
-  let bestRaw = null;
-  let bestNorm = pinnedNorm;
+  let sameMajorRaw = null, sameMajorNorm = pinnedNorm;
+  let overallRaw = null,   overallNorm   = pinnedNorm;
 
   for (const tag of allTags) {
     const norm = normalizeTag(tag);
     if (!norm) continue;
-    if (Number(norm.split('.')[0]) !== pinnedMajor) continue;
-    if (compareSemver(norm, bestNorm) > 0) {
-      bestRaw = tag;
-      bestNorm = norm;
+    const major = Number(norm.split('.')[0]);
+    if (major === pinnedMajor && compareSemver(norm, sameMajorNorm) > 0) {
+      sameMajorRaw = tag; sameMajorNorm = norm;
+    }
+    if (compareSemver(norm, overallNorm) > 0) {
+      overallRaw = tag; overallNorm = norm;
     }
   }
 
-  return bestRaw && compareSemver(bestNorm, pinnedNorm) > 0 ? bestRaw : null;
+  // Only report newestOverall when it is a higher major than the pinned line
+  const overallMajor = overallRaw ? Number(overallNorm.split('.')[0]) : pinnedMajor;
+  return {
+    newerSameMajor: sameMajorRaw,
+    newestOverall: overallRaw && overallMajor !== pinnedMajor ? overallRaw : null,
+  };
 }
 
 async function checkOneMapping(db, mapping) {
@@ -132,15 +141,41 @@ async function checkOneMapping(db, mapping) {
     return;
   }
 
-  const newerTag = findNewerSameMajor(mapping.pinned_tag, allTags);
-  if (!newerTag) return;
+  const { newerSameMajor, newestOverall } = analyzeVersions(mapping.pinned_tag, allTags);
+  if (!newerSameMajor && !newestOverall) return;
 
-  if (newerTag === mapping.pinned_tag_notified) return;
+  // Dedup: use the most-significant newer tag as the key
+  const dedupKey = newestOverall || newerSameMajor;
+  if (dedupKey === mapping.pinned_tag_notified) return;
 
-  const imageName = mapping.image.split('/').pop();
-  const title = `${imageName}: newer tag available`;
-  const ntfyBody = `Pinned: **${mapping.pinned_tag}**\nNewer: **${newerTag}**\nImage: ${mapping.image}`;
-  const plainBody = `Pinned: ${mapping.pinned_tag}\nNewer: ${newerTag}\nImage: ${mapping.image}`;
+  const imageName     = mapping.image.split('/').pop();
+  const pinnedNorm    = normalizeTag(mapping.pinned_tag) || mapping.pinned_tag;
+  const sameMajorDisp = newerSameMajor ? (normalizeTag(newerSameMajor) || newerSameMajor) : null;
+  const overallDisp   = newestOverall  ? (normalizeTag(newestOverall)  || newestOverall)  : null;
+  const majorLine     = `${pinnedNorm.split('.')[0]}.x`;
+
+  let title;
+  if (newerSameMajor && newestOverall) {
+    title = `${imageName}: ${pinnedNorm} -> ${sameMajorDisp} (${overallDisp} available)`;
+  } else if (newerSameMajor) {
+    title = `${imageName}: ${pinnedNorm} -> ${sameMajorDisp}`;
+  } else {
+    title = `${imageName}: major update available (${overallDisp})`;
+  }
+
+  const ntfyLines = [`Pinned: **${mapping.pinned_tag}**`];
+  if (newerSameMajor) ntfyLines.push(`Newest in ${majorLine}: **${newerSameMajor}**`);
+  else                ntfyLines.push(`Up to date in ${majorLine}`);
+  if (newestOverall)  ntfyLines.push(`Newest overall: **${newestOverall}**`);
+  ntfyLines.push(`Image: ${mapping.image}`);
+  const ntfyBody = ntfyLines.join('\n');
+
+  const plainLines = [`Pinned: ${mapping.pinned_tag}`];
+  if (newerSameMajor) plainLines.push(`Newest in ${majorLine}: ${newerSameMajor}`);
+  else                plainLines.push(`Up to date in ${majorLine}`);
+  if (newestOverall)  plainLines.push(`Newest overall: ${newestOverall}`);
+  plainLines.push(`Image: ${mapping.image}`);
+  const plainBody = plainLines.join('\n');
 
   if (getSetting('ntfy_enabled') === 'true') {
     try {
@@ -149,7 +184,6 @@ async function checkOneMapping(db, mapping) {
       logger.error({ err: err.message }, 'ntfy pinned-tag notification failed');
     }
   }
-
   if (getSetting('email_enabled') === 'true') {
     try {
       await sendEmail({ subject: `[ImagePulse] ${title}`, text: plainBody });
@@ -158,8 +192,8 @@ async function checkOneMapping(db, mapping) {
     }
   }
 
-  db.prepare('UPDATE mappings SET pinned_tag_notified = ? WHERE image = ?').run(newerTag, mapping.image);
-  logger.info({ image: mapping.image, pinned: mapping.pinned_tag, newer: newerTag }, 'Pinned tag newer version found');
+  db.prepare('UPDATE mappings SET pinned_tag_notified = ? WHERE image = ?').run(dedupKey, mapping.image);
+  logger.info({ image: mapping.image, pinned: mapping.pinned_tag, newerSameMajor, newestOverall }, 'Pinned tag check result');
 }
 
 export async function checkPinnedTags() {

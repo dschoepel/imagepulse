@@ -23,6 +23,11 @@ function setCached(key, value) {
  * @returns {{ type: 'hub'|'ghcr'|'oci', namespace?: string, name?: string, host?: string, path?: string }}
  */
 export function parseImageRef(image) {
+  // Strip docker.io/ prefix — Docker Hub images are often fully-qualified with it
+  if (image.startsWith('docker.io/')) {
+    image = image.slice('docker.io/'.length);
+  }
+
   if (image.startsWith('ghcr.io/')) {
     const rest = image.slice('ghcr.io/'.length);
     const slash = rest.indexOf('/');

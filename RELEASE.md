@@ -2,6 +2,25 @@
 
 ---
 
+## [1.5.1] — 2026-06-08
+
+### Pinned Tag Watcher — bug fixes
+
+Five fixes to the pinned tag watcher introduced in v1.5.0:
+
+- **`docker.io/` prefix** — images stored as `docker.io/library/nginx` now resolve correctly against the Docker Hub API (were returning 404)
+- **False "major update" notifications** — channel tags like `stable-alpine3.23-slim` or `trixie-slim` were having their embedded version number (`3.23`) extracted, triggering spurious cross-major alerts; the tag normalizer is now anchored so only tags starting with a version-like prefix (`version-`, `v`, or a bare digit) are recognized
+- **Tag ordering** — Docker Hub tag fetch now uses `ordering=last_updated` (newest first) instead of alphabetical descending; both `version-34.0.0` style and `1.31.1` style version tags surface on page 1
+- **Silent 404** — a non-OK first-page response now logs a warning instead of silently returning an empty tag list
+- **ntfy title encoding** — `→` replaced with `->` so the title is valid ASCII in HTTP headers
+
+Also improves notification content when you're behind on multiple generations:
+
+- Title: `nginx: 1.25 -> 1.31.1` (same-major only) or `nextcloud: 32.0.0 -> 32.0.11 (34.0.0 available)` (cross-major gap)
+- Body: `Newest in 1.x: 1.31.1-alpine3.23-perl` / `Up to date in 1.x` + optional `Newest overall:` line
+
+---
+
 ## [1.5.0] — 2026-06-08
 
 ### Pinned Tag Watcher
