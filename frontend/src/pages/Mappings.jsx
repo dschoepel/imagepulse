@@ -124,6 +124,7 @@ function AddMappingModal({ onClose, onAdded }) {
   const [newLinkType,     setNewLinkType]     = useState('github');
   const [newRepo,         setNewRepo]         = useState('');
   const [newUrl,          setNewUrl]          = useState('');
+  const [newPinnedTag,    setNewPinnedTag]    = useState('');
   const [addImageError,   setAddImageError]   = useState(null);
   const [addLinkError,    setAddLinkError]    = useState(null);
   const [addLinkChecking, setAddLinkChecking] = useState(false);
@@ -153,10 +154,11 @@ function AddMappingModal({ onClose, onAdded }) {
       await apiFetch('/settings/mappings', {
         method: 'PUT',
         body: JSON.stringify({
-          image:     newImage.trim(),
-          repo:      newLinkType === 'github' ? newRepo.trim() : '',
-          url:       newLinkType === 'url'    ? newUrl.trim()  : '',
-          link_type: newLinkType,
+          image:      newImage.trim(),
+          repo:       newLinkType === 'github' ? newRepo.trim() : '',
+          url:        newLinkType === 'url'    ? newUrl.trim()  : '',
+          link_type:  newLinkType,
+          pinned_tag: newPinnedTag.trim() || null,
         }),
       });
       onAdded();
@@ -229,6 +231,20 @@ function AddMappingModal({ onClose, onAdded }) {
             )}
           </div>
 
+          {/* Pinned tag */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">
+              Pinned tag <span className="text-gray-400 font-normal">(optional — watch for newer versions)</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 1.25.3 or v34.0.0"
+              value={newPinnedTag}
+              onChange={(e) => setNewPinnedTag(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
           {addError && <p className="text-red-600 text-xs">{addError}</p>}
 
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
@@ -266,6 +282,7 @@ export default function Mappings() {
   const [editLinkType,     setEditLinkType]     = useState('github');
   const [editRepo,         setEditRepo]         = useState('');
   const [editUrl,          setEditUrl]          = useState('');
+  const [editPinnedTag,    setEditPinnedTag]    = useState('');
   const [editImageError,   setEditImageError]   = useState(null);
   const [editLinkError,    setEditLinkError]    = useState(null);
   const [editLinkChecking, setEditLinkChecking] = useState(false);
@@ -311,12 +328,13 @@ export default function Mappings() {
     setEditLinkType(m.link_type || 'github');
     setEditRepo(m.repo || '');
     setEditUrl(m.url || '');
+    setEditPinnedTag(m.pinned_tag || '');
     setEditImageError(null); setEditLinkError(null); setEditSaveError(null);
   }
 
   function cancelEdit() {
     setEditingId(null);
-    setEditImage(''); setEditLinkType('github'); setEditRepo(''); setEditUrl('');
+    setEditImage(''); setEditLinkType('github'); setEditRepo(''); setEditUrl(''); setEditPinnedTag('');
     setEditImageError(null); setEditLinkError(null); setEditSaveError(null);
   }
 
@@ -337,10 +355,11 @@ export default function Mappings() {
       await apiFetch(`/settings/mappings/${encodeURIComponent(oldImage)}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          newImage:  editImage.trim(),
-          repo:      editLinkType === 'github' ? editRepo.trim() : '',
-          url:       editLinkType === 'url'    ? editUrl.trim()  : '',
-          link_type: editLinkType,
+          newImage:   editImage.trim(),
+          repo:       editLinkType === 'github' ? editRepo.trim() : '',
+          url:        editLinkType === 'url'    ? editUrl.trim()  : '',
+          link_type:  editLinkType,
+          pinned_tag: editPinnedTag.trim() || null,
         }),
       });
       cancelEdit(); load();
@@ -481,6 +500,16 @@ export default function Mappings() {
                             : <FieldError err={editLinkError} />}
                         </div>
                       )}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-500">Pinned tag</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 1.25.3"
+                          value={editPinnedTag}
+                          onChange={(e) => setEditPinnedTag(e.target.value)}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-2 align-top">
                       <HostPills hosts={m.hosts || []} />
@@ -503,7 +532,16 @@ export default function Mappings() {
                 ) : (
                   /* ── Read row ── */
                   <tr key={m.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-700">{m.image}</td>
+                    <td className="px-4 py-3 align-top">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-mono text-xs text-gray-700">{m.image}</span>
+                        {m.pinned_tag && (
+                          <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-1.5 py-0.5 w-fit">
+                            ↑ {m.pinned_tag}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3"><LinkCell m={m} /></td>
                     <td className="px-4 py-3"><HostPills hosts={m.hosts || []} /></td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">

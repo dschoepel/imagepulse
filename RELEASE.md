@@ -2,13 +2,22 @@
 
 ---
 
-## [1.4.6] — 2026-04-04
+## [1.5.0] — 2026-06-08
 
-### Notification title and body formatting polish
+### Pinned Tag Watcher
 
-- **Hostname/image name separator** — title now reads `hostname: imageName` (space after colon) in both ntfy title and email subject; previously `hostname:imageName` with no space
-- **Bold image name in ntfy body** — the `Image:` line in the ntfy notification body now renders the short image name in bold markdown (`**imageName**`); e.g. `Image: ghcr.io/linuxserver/**swag**:latest`
-- **Bold image name in email header** — the blue header bar wraps the image name in `<strong>` so it renders bold in HTML email clients
+Watch a pinned version tag for an image and get notified when a newer tag is published in the same major version line — useful when you deliberately run a specific version rather than `latest` and want to know when a patch is available without switching to auto-update.
+
+- **Per-mapping pinned tag** — set an optional pinned tag on any mapping via the Mappings page (Add modal or inline edit); accepts any tag format (`version-29.0.0`, `29.0.0-ls436`, `v1.2.3`)
+- **6-hour polling** — the backend queries Docker Hub / GHCR on startup and every 6 hours; sends ntfy and/or email when a newer tag exists in the same major version line
+- **Smart tag normalization** — extracts the numeric core from tag formats including `version-X.Y.Z`, `vX.Y.Z`, `X.Y.Z-ls###`, and arch-prefixed tags; single-integer tags are ignored
+- **Dedup protection** — once notified about a newer tag, repeated polls are silently skipped until the user updates their pinned tag
+- **Amber badge in UI** — mapping rows show an `↑ version-X.Y.Z` badge when a pinned tag is set
+
+Also includes the v1.4.6 notification formatting changes (shipped in the same Docker image):
+- ntfy title and email subject now read `hostname: imageName` (space after colon)
+- ntfy body `Image:` line wraps the short image name in bold markdown
+- Email header bar wraps the image name in `<strong>`
 
 ---
 

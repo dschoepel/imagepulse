@@ -11,6 +11,7 @@ import settingsRouter from './routes/settings.js';
 import versionRouter from './routes/version.js';
 import archiveRouter from './routes/archive.js';
 import { initDb, getSetting, pruneOldEvents, seedSettingsFromEnv } from './db/index.js';
+import { checkPinnedTags } from './services/tagWatcher.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3579;
@@ -30,6 +31,19 @@ function runRetention() {
 
 runRetention();
 setInterval(runRetention, 24 * 60 * 60 * 1000);
+
+// Run pinned tag watcher on startup and every 6 hours
+async function runPinnedTagWatcher() {
+  try {
+    await checkPinnedTags();
+    logger.info('Pinned tag check completed');
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Pinned tag watcher error');
+  }
+}
+
+runPinnedTagWatcher();
+setInterval(runPinnedTagWatcher, 6 * 60 * 60 * 1000);
 
 const app = express();
 

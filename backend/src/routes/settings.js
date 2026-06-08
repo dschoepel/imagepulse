@@ -220,14 +220,14 @@ router.get('/mappings', (req, res) => {
 
 router.put('/mappings', (req, res) => {
   try {
-    const { image, repo, url, link_type = 'github' } = req.body;
+    const { image, repo, url, link_type = 'github', pinned_tag = null } = req.body;
     if (!image) return res.status(400).json({ ok: false, error: 'image is required' });
     if (link_type === 'github' && !repo) return res.status(400).json({ ok: false, error: 'repo is required for GitHub mappings' });
     if (link_type === 'url' && !url) return res.status(400).json({ ok: false, error: 'url is required for URL mappings' });
     const db = getDb();
     db.prepare(
-      'INSERT OR REPLACE INTO mappings (image, repo, url, link_type) VALUES (?, ?, ?, ?)'
-    ).run(image, repo || '', url || '', link_type);
+      'INSERT OR REPLACE INTO mappings (image, repo, url, link_type, pinned_tag) VALUES (?, ?, ?, ?, ?)'
+    ).run(image, repo || '', url || '', link_type, pinned_tag || null);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -236,21 +236,26 @@ router.put('/mappings', (req, res) => {
 
 router.patch('/mappings/:image', (req, res) => {
   try {
-    const { newImage, repo, url, link_type = 'github' } = req.body;
+    const { newImage, repo, url, link_type = 'github', pinned_tag = null } = req.body;
     const oldImage = req.params.image;
     if (link_type === 'github' && !repo) return res.status(400).json({ ok: false, error: 'repo is required for GitHub mappings' });
     if (link_type === 'url' && !url) return res.status(400).json({ ok: false, error: 'url is required for URL mappings' });
     const db = getDb();
     const update = db.transaction(() => {
       if (newImage && newImage !== oldImage) {
+        const old = db.prepare('SELECT pinned_tag_notified FROM mappings WHERE image = ?').get(oldImage);
         db.prepare('DELETE FROM mappings WHERE image = ?').run(oldImage);
         db.prepare(
-          'INSERT OR REPLACE INTO mappings (image, repo, url, link_type) VALUES (?, ?, ?, ?)'
-        ).run(newImage, repo || '', url || '', link_type);
+          'INSERT OR REPLACE INTO mappings (image, repo, url, link_type, pinned_tag, pinned_tag_notified) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(newImage, repo || '', url || '', link_type, pinned_tag || null, old?.pinned_tag_notified ?? null);
       } else {
-        db.prepare(
-          'UPDATE mappings SET repo = ?, url = ?, link_type = ? WHERE image = ?'
-        ).run(repo || '', url || '', link_type, oldImage);
+        db.prepare(`
+          UPDATE mappings
+          SET repo = ?, url = ?, link_type = ?,
+              pinned_tag = ?,
+              pinned_tag_notified = CASE WHEN pinned_tag IS NOT ? THEN NULL ELSE pinned_tag_notified END
+          WHERE image = ?
+        `).run(repo || '', url || '', link_type, pinned_tag || null, pinned_tag || null, oldImage);
       }
     });
     update();

@@ -22,7 +22,7 @@ function setCached(key, value) {
  * @param {string} image
  * @returns {{ type: 'hub'|'ghcr'|'oci', namespace?: string, name?: string, host?: string, path?: string }}
  */
-function parseImageRef(image) {
+export function parseImageRef(image) {
   if (image.startsWith('ghcr.io/')) {
     const rest = image.slice('ghcr.io/'.length);
     const slash = rest.indexOf('/');

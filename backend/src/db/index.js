@@ -68,6 +68,11 @@ export function initDb() {
   try { db.exec("ALTER TABLE mappings ADD COLUMN link_type TEXT NOT NULL DEFAULT 'github'"); } catch {}
   try { db.exec('ALTER TABLE mappings ADD COLUMN url TEXT'); } catch {}
 
+  // Mappings: pinned tag watcher columns
+  try { db.exec('ALTER TABLE mappings ADD COLUMN pinned_tag TEXT'); } catch {}
+  try { db.exec('ALTER TABLE mappings ADD COLUMN pinned_tag_last_checked TEXT'); } catch {}
+  try { db.exec('ALTER TABLE mappings ADD COLUMN pinned_tag_notified TEXT'); } catch {}
+
   return db;
 }
 

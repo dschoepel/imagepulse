@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.5.0] — 2026-06-08
+
+### Added
+
+- **Pinned Tag Watcher** — mappings can now have an optional pinned tag (e.g. `version-29.0.0`); ImagePulse polls Docker Hub and GHCR every 6 hours and sends an ntfy/email notification when a newer tag is available in the same major version line (e.g. `version-29.0.0` → notifies when `version-29.0.7` is published); checked once on startup and every 6 hours thereafter
+- **Pinned tag input in Mappings UI** — the Add Mapping modal and the inline edit row both have an optional "Pinned tag" text field; accepts any tag string regardless of prefix or suffix format
+- **Pinned tag badge on mapping rows** — when a mapping has a pinned tag set, an amber `↑ version-X.Y.Z` badge appears below the image name in the table
+- **New DB columns on `mappings`** — `pinned_tag`, `pinned_tag_last_checked`, `pinned_tag_notified`; added via safe `try/catch ALTER TABLE` migrations; no data loss on upgrade
+
+### Changed
+
+- **Tag normalization** — the watcher extracts the numeric version from any tag format (`version-29.0.1`, `29.0.0-ls436`, `amd64-29.0.0`, `v1.2.3`) using a substring match rather than a strict prefix; single-integer tags (e.g. `48`) are ignored
+- **Docker Hub tag fetch ordering** — changed from `-last_updated` to `name` and increased page limit to 5 (500 tags); this surfaces versioned tags (e.g. `version-X.Y.Z`) at the top of the result set rather than recent build-number-only tags
+- **`parseImageRef` exported** — `backend/src/services/registry.js` now exports `parseImageRef` so it can be shared by the new tag watcher service without duplication
+
+### Fixed
+
+- **Dedup notifications** — a new `pinned_tag_notified` column tracks the last notified newer tag; the watcher skips the notification if the best candidate matches the stored value, preventing repeat alerts on every 6-hour poll until the user updates their pinned tag
+
+---
+
 ## [1.4.6] — 2026-04-04
 
 ### Changed
