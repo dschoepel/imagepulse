@@ -2,6 +2,18 @@
 
 ---
 
+## [1.6.0] — 2026-09-17
+
+### Delete a single event
+
+The Events page previously had no way to remove an individual event short of deleting the whole database or waiting on retention/archiving — useful for clearing out test notifications (e.g. a `diun notif test` run) without disturbing anything else.
+
+- **"Delete Event" button** — in the expanded row detail on the Events page, alongside "Resend Notification"; asks for confirmation before deleting
+- **`DELETE /api/events/:id`** — new backend endpoint; permanently removes the event from the live `events` table
+- The Archive page is unaffected and remains read-only, as intended
+
+---
+
 ## [1.5.1] — 2026-06-08
 
 ### Pinned Tag Watcher — bug fixes

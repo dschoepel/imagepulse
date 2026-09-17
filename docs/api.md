@@ -190,6 +190,29 @@ Re-sends the stored notification for an event through all currently-enabled chan
 
 ---
 
+### `DELETE /api/events/:id`
+
+Permanently deletes a single event from the live events table. Does not affect archived events.
+
+**Path parameter:** `id` — event ID (integer)
+
+**Request body:** none
+
+**Response `200`:**
+
+```json
+{ "ok": true }
+```
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `404` | Event not found |
+| `500` | Database error |
+
+---
+
 ## Settings
 
 ### `GET /api/settings`

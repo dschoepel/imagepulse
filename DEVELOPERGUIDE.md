@@ -51,7 +51,7 @@ imagepulse/
 │       │   └── index.js          # SQLite init, migrations, all query helpers
 │       ├── routes/
 │       │   ├── webhook.js        # POST /api/webhook — core ingestion logic
-│       │   ├── events.js         # GET/POST /api/events
+│       │   ├── events.js         # GET/POST/DELETE /api/events
 │       │   ├── archive.js        # GET /api/archive
 │       │   ├── settings.js       # GET/PUT /api/settings, mappings CRUD
 │       │   └── version.js        # GET /api/version — update check
@@ -356,6 +356,7 @@ All routes are prefixed `/api`. Full request/response shapes are in `docs/api.md
 | `GET` | `/events/stats` | Total count, unique images, last updated |
 | `GET` | `/events/chart-data` | Events-per-day (14d) + top-10 images |
 | `POST` | `/events/:id/resend` | Resend stored notification through active channels |
+| `DELETE` | `/events/:id` | Permanently delete a single event |
 | `GET` | `/archive` | List archived events (same query params as events) |
 | `GET` | `/settings` | All settings as key-value object |
 | `PUT` | `/settings` | Batch-update settings |

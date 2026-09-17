@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import logger from '../logger.js';
-import { getEvents, getEventCount, getEventStats, getEventById, getChartData, getSetting } from '../db/index.js';
+import { getEvents, getEventCount, getEventStats, getEventById, deleteEvent, getChartData, getSetting } from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
 import { buildEmailHtml } from '../services/emailTemplate.js';
@@ -119,6 +119,19 @@ router.post('/:id/resend', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, 'Resend error');
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.delete('/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const changes = deleteEvent(id);
+    if (!changes) return res.status(404).json({ ok: false, error: 'Event not found' });
+    logger.info({ id }, 'Event deleted');
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Event delete error');
     res.status(500).json({ ok: false, error: err.message });
   }
 });

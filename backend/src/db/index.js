@@ -100,6 +100,10 @@ export function markNotified(id, notificationTitle, notificationBody, githubRele
          githubReleaseUrl ?? null, resolvedVersion ?? null, id);
 }
 
+export function deleteEvent(id) {
+  return db.prepare('DELETE FROM events WHERE id = ?').run(id).changes;
+}
+
 export function getEventById(id) {
   return db.prepare('SELECT * FROM events WHERE id = ?').get(id);
 }

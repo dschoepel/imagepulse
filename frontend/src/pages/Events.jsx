@@ -156,8 +156,9 @@ function AddMappingInline({ image, onAdded }) {
   );
 }
 
-function EventDetail({ ev, mappedRepo, onMappingAdded }) {
+function EventDetail({ ev, mappedRepo, onMappingAdded, onDeleted }) {
   const [resendStatus, setResendStatus] = useState(null);
+  const [deleteStatus, setDeleteStatus] = useState(null);
 
   let platform = '—';
   try {
@@ -172,6 +173,17 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
       setResendStatus({ ok: true, msg: 'Notification resent' });
     } catch (e) {
       setResendStatus({ ok: false, msg: e.message });
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Delete this event? This cannot be undone.')) return;
+    setDeleteStatus({ pending: true });
+    try {
+      await apiFetch(`/events/${ev.id}`, { method: 'DELETE' });
+      onDeleted(ev.id);
+    } catch (e) {
+      setDeleteStatus({ ok: false, msg: e.message });
     }
   }
 
@@ -243,8 +255,8 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
         </div>
       </div>
 
-      {ev.notification_title && (
-        <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex items-center gap-3 flex-wrap">
+        {ev.notification_title && (
           <button
             onClick={handleResend}
             disabled={resendStatus?.pending}
@@ -252,13 +264,23 @@ function EventDetail({ ev, mappedRepo, onMappingAdded }) {
           >
             {resendStatus?.pending ? 'Resending…' : 'Resend Notification'}
           </button>
-          {resendStatus && !resendStatus.pending && (
-            <span className={`text-xs font-medium ${resendStatus.ok ? 'text-green-600' : 'text-red-600'}`}>
-              {resendStatus.msg}
-            </span>
-          )}
-        </div>
-      )}
+        )}
+        {resendStatus && !resendStatus.pending && (
+          <span className={`text-xs font-medium ${resendStatus.ok ? 'text-green-600' : 'text-red-600'}`}>
+            {resendStatus.msg}
+          </span>
+        )}
+        <button
+          onClick={handleDelete}
+          disabled={deleteStatus?.pending}
+          className="bg-white text-red-600 border border-red-300 px-3 py-1.5 rounded text-xs font-medium hover:bg-red-50 disabled:opacity-50"
+        >
+          {deleteStatus?.pending ? 'Deleting…' : 'Delete Event'}
+        </button>
+        {deleteStatus?.ok === false && (
+          <span className="text-xs font-medium text-red-600">{deleteStatus.msg}</span>
+        )}
+      </div>
 
       {ev.raw_payload && <RawPayload raw={ev.raw_payload} />}
     </div>
@@ -307,13 +329,13 @@ export default function Events() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
+  function loadEvents() {
     setLoading(true);
     const params = new URLSearchParams({ page, limit: perPage, sortBy, sortDir });
     if (image) params.set('image', image);
     if (status) params.set('status', status);
 
-    apiFetch(`/events?${params}`)
+    return apiFetch(`/events?${params}`)
       .then((data) => {
         setEvents(data.events);
         setPagination(data.pagination);
@@ -321,7 +343,16 @@ export default function Events() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadEvents();
   }, [page, perPage, image, status, sortBy, sortDir]);
+
+  function handleEventDeleted(id) {
+    setExpandedId((prev) => (prev === id ? null : prev));
+    loadEvents();
+  }
 
   function handleFilterChange() {
     setPage(1);
@@ -466,6 +497,7 @@ export default function Events() {
                           ev={ev}
                           mappedRepo={mappings[ev.image] ?? null}
                           onMappingAdded={handleMappingAdded}
+                          onDeleted={handleEventDeleted}
                         />
                       </td>
                     </tr>

@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.0] — 2026-09-17
+
+### Added
+
+- **Delete a single event** — the Events page now has a "Delete Event" button in the expanded row detail, next to "Resend Notification"; permanently removes that event from the live events table after a confirmation prompt. New `DELETE /api/events/:id` endpoint. The Archive page remains read-only by design.
+
+---
+
 ## [1.5.1] — 2026-06-08
 
 ### Fixed
