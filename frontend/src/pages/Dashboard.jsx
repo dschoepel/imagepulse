@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { apiFetch } from '../api.js';
+import { apiFetch, getUnmappedImages, ignoreImage } from '../api.js';
 
 function StatusBadge({ status }) {
   const colours = {
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [chartData, setChartData] = useState(null);
+  const [unmapped, setUnmapped] = useState([]);
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -81,14 +83,22 @@ export default function Dashboard() {
       apiFetch('/events/stats'),
       apiFetch('/events?limit=10'),
       apiFetch('/events/chart-data'),
+      getUnmappedImages(),
     ])
-      .then(([s, e, c]) => {
+      .then(([s, e, c, u]) => {
         setStats(s);
         setEvents(e.events);
         setChartData(c);
+        setUnmapped(u.images);
       })
       .catch((err) => setError(err.message));
   }, []);
+
+  function handleIgnore(image) {
+    ignoreImage(image)
+      .then(() => setUnmapped((prev) => prev.filter((u) => u.image !== image)))
+      .catch((err) => setError(err.message));
+  }
 
   if (error) return <p className="text-red-600">Error: {error}</p>;
 
@@ -141,6 +151,58 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Unmapped images */}
+      {unmapped.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">
+            Unmapped Images <span className="text-sm font-normal text-gray-400">({unmapped.length})</span>
+          </h2>
+          <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Image</th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Events</th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Last Seen</th>
+                  <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider text-xs">Guessed Repo</th>
+                  <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-500 uppercase tracking-wider text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {unmapped.map((u) => (
+                  <tr key={u.image} className="hover:bg-gray-50">
+                    <td className="px-2 sm:px-4 py-3 font-mono text-xs text-gray-700 max-w-[100px] sm:max-w-xs truncate">{u.image}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-gray-600">{u.eventCount}</td>
+                    <td className="hidden sm:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {new Date(u.lastSeen + 'Z').toLocaleString()}
+                    </td>
+                    <td className="px-2 sm:px-4 py-3 text-gray-600">
+                      {u.guessedRepo
+                        ? <span>{u.guessedRepo} <span className="text-xs text-gray-400">({u.guessConfidence})</span></span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">
+                      <Link
+                        to={`/mappings?image=${encodeURIComponent(u.image)}&open=1${u.guessedRepo ? `&repo=${encodeURIComponent(u.guessedRepo)}` : ''}`}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs font-medium mr-3"
+                      >
+                        Create Mapping
+                      </Link>
+                      <button
+                        onClick={() => handleIgnore(u.image)}
+                        className="text-gray-500 hover:text-red-600 text-xs font-medium"
+                      >
+                        Ignore
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">Recent Events</h2>

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import fetch from 'node-fetch';
-import { getDb, getSetting, getPreviewPrune, pruneOldEvents, archiveAndPrune } from '../db/index.js';
+import {
+  getDb, getSetting, getPreviewPrune, pruneOldEvents, archiveAndPrune,
+  getUnmappedImages, getUnmappedCount, ignoreImage, unignoreImage, getIgnoredImages,
+} from '../db/index.js';
 import { sendNtfy } from '../services/ntfy.js';
 import { sendEmail } from '../services/email.js';
 
@@ -269,6 +272,54 @@ router.delete('/mappings/:image', (req, res) => {
   try {
     const db = getDb();
     db.prepare('DELETE FROM mappings WHERE image = ?').run(req.params.image);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- Unmapped images ---
+
+router.get('/unmapped-images', (req, res) => {
+  try {
+    res.json({ ok: true, images: getUnmappedImages() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.get('/unmapped-count', (req, res) => {
+  try {
+    res.json({ ok: true, count: getUnmappedCount() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- Ignored images ---
+
+router.post('/ignored-images', (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ ok: false, error: 'image is required' });
+    ignoreImage(image);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.get('/ignored-images', (req, res) => {
+  try {
+    res.json({ ok: true, images: getIgnoredImages() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.delete('/ignored-images/:image', (req, res) => {
+  try {
+    unignoreImage(req.params.image);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

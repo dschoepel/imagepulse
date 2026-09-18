@@ -443,3 +443,100 @@ Deletes the mapping for the given image.
 ```json
 { "ok": true }
 ```
+
+---
+
+### `GET /api/settings/unmapped-images`
+
+Lists images that have events but no mapping and haven't been ignored. Backs the
+Dashboard's "Unmapped Images" section.
+
+**Response `200`:**
+
+```json
+{
+  "ok": true,
+  "images": [
+    {
+      "image": "ghcr.io/finsys/hawser",
+      "eventCount": 3,
+      "lastSeen": "2026-09-18 12:00:00",
+      "guessedRepo": "finsys/hawser",
+      "guessConfidence": "high"
+    }
+  ]
+}
+```
+
+`guessedRepo`/`guessConfidence` are a best-effort, offline guess (no GitHub API call) —
+`"high"` for `ghcr.io/<owner>/<repo>`, `"medium"` for non-official Docker Hub
+`<user>/<repo>`, or both `null` when no reliable guess exists (e.g. Docker Hub official
+`library/*` images). Verify via `GET /settings/validate-mapping` before trusting it.
+
+---
+
+### `GET /api/settings/unmapped-count`
+
+Just the count from the same query, for the sidebar badge.
+
+**Response `200`:**
+
+```json
+{ "ok": true, "count": 3 }
+```
+
+---
+
+### `POST /api/settings/ignored-images`
+
+Permanently ignores an image so it stops appearing in `unmapped-images`/`unmapped-count`.
+
+**Request body:**
+
+```json
+{ "image": "docker.io/library/eclipse-mosquitto" }
+```
+
+**Response `200`:**
+
+```json
+{ "ok": true }
+```
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | `image` missing |
+
+---
+
+### `GET /api/settings/ignored-images`
+
+Lists previously ignored images.
+
+**Response `200`:**
+
+```json
+{
+  "ok": true,
+  "images": [
+    { "image": "docker.io/library/eclipse-mosquitto", "created_at": "2026-09-18 12:00:00" }
+  ]
+}
+```
+
+---
+
+### `DELETE /api/settings/ignored-images/:image`
+
+Un-ignores an image — it will reappear in `unmapped-images`/`unmapped-count` if it still
+has events and no mapping.
+
+**Path parameter:** `image` — URL-encoded image name
+
+**Response `200`:**
+
+```json
+{ "ok": true }
+```

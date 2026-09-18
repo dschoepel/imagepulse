@@ -24,3 +24,31 @@ export async function validateRepo(repo) {
 export async function validateUrl(url) {
   return apiFetch(`/settings/validate-url?url=${encodeURIComponent(url.trim())}`);
 }
+
+/** List of { image, eventCount, lastSeen, guessedRepo, guessConfidence } for events with no mapping. */
+export async function getUnmappedImages() {
+  return apiFetch('/settings/unmapped-images');
+}
+
+/** { count } of distinct unmapped images — cheap, for the sidebar badge. */
+export async function getUnmappedCount() {
+  return apiFetch('/settings/unmapped-count');
+}
+
+/** Permanently ignore an image so it stops appearing as unmapped. */
+export async function ignoreImage(image) {
+  return apiFetch('/settings/ignored-images', {
+    method: 'POST',
+    body: JSON.stringify({ image }),
+  });
+}
+
+/** List of { image, created_at } previously ignored images. */
+export async function getIgnoredImages() {
+  return apiFetch('/settings/ignored-images');
+}
+
+/** Un-ignore a previously ignored image. */
+export async function unignoreImage(image) {
+  return apiFetch(`/settings/ignored-images/${encodeURIComponent(image)}`, { method: 'DELETE' });
+}

@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.7.0] — 2026-09-18
+
+### Added
+
+- **Unmapped-image notifications** — events for an image with no `mappings` entry now surface proactively instead of silently sitting there: an orange badge/count on the Mappings sidebar icon (polled every 60s), and an "Unmapped Images" section on the Dashboard listing each one with event count, last-seen time, and — where derivable — a best-guess GitHub repo (`ghcr.io/<owner>/<repo>` → high confidence; non-official Docker Hub `<user>/<repo>` → medium confidence; official `library/*` images → no guess). "Create Mapping" deep-links to the Mappings page with the Add Mapping modal pre-opened, image locked, and repo pre-filled with the guess (labeled "please verify"). "Ignore" permanently dismisses an image from the notification; ignored images can be un-ignored from a new "Ignored Images" section in Settings. New endpoints: `GET/POST /api/settings/unmapped-images`, `/unmapped-count`, `/ignored-images`, `DELETE /api/settings/ignored-images/:image`.
+
+---
+
 ## [1.6.0] — 2026-09-17
 
 ### Added

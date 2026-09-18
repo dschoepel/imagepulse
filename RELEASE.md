@@ -2,6 +2,21 @@
 
 ---
 
+## [1.7.0] — 2026-09-18
+
+### Unmapped-image notifications
+
+Previously the only way to notice a new image showing up with no GitHub repo/release-notes mapping was to browse Events and spot a row missing the green "mapped" dot — easy to miss. Now it's surfaced proactively:
+
+- **Sidebar badge** — the Mappings nav icon shows an orange dot (collapsed) or count pill (expanded) for how many images have events but no mapping, refreshed every 60 seconds
+- **Dashboard list** — an "Unmapped Images" section shows each one with its event count, last-seen time, and a best-guess GitHub repo where one can be derived from the image name
+- **One-click create** — "Create Mapping" opens the Mappings page's Add Mapping form pre-filled: the image is locked to the exact value events report, and the repo field is pre-filled with the guess (clearly labeled as a guess, still goes through the same GitHub verification as a manual entry)
+- **Permanent ignore** — images you don't want to map (e.g. a base image you don't track release notes for) can be dismissed with "Ignore," and managed later from a new "Ignored Images" section in Settings
+
+Repo guesses: `ghcr.io/<owner>/<repo>` images guess `owner/repo` with high confidence (GHCR namespaces are literally GitHub orgs/users); non-official Docker Hub images (`<user>/<repo>`) guess `user/repo` with medium confidence; official Docker Hub images (`library/*`) get no guess.
+
+---
+
 ## [1.6.0] — 2026-09-17
 
 ### Delete a single event

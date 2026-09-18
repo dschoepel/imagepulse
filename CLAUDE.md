@@ -70,6 +70,15 @@ docker compose up -d      # full container build/run, per docker-compose.yml
 - **Mappings** support two link types (`github` — owner/repo, or `url` — arbitrary
   release-notes URL) and an optional `pinned_tag` for the tag watcher; see
   `db/index.js` migrations for the relevant columns.
+- **Unmapped-image notifications**: "unmapped" is computed live (an anti-join in
+  `getUnmappedImages()`/`getUnmappedCount()`, `db/index.js`) — events whose `image` has
+  no row in `mappings` and no row in `ignored_images`. No state is stored on
+  `events`/`mappings` themselves; the notification self-resolves the moment a mapping is
+  created. `guessRepoFromImage()` (`services/registry.js`) offers an offline best-guess
+  repo for pre-filling the create form — never trust it without the existing
+  `validate-mapping` GitHub check. This was also the first polling pattern introduced in
+  the frontend (`Layout.jsx`, 60s interval) — `versionInfo` nearby is still fetch-once,
+  don't confuse the two.
 
 ## Release process
 

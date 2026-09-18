@@ -51,6 +51,30 @@ export function parseImageRef(image) {
   return { type: 'hub', namespace: image.slice(0, slash), name: image.slice(slash + 1) };
 }
 
+/**
+ * Best-effort guess at the GitHub owner/repo for an image, for pre-filling the
+ * mapping create form. Pure/offline — no network calls; the actual GitHub
+ * existence check happens client-side via GET /settings/validate-mapping.
+ * @param {string} image
+ * @returns {{ guessedRepo: string|null, guessConfidence: 'high'|'medium'|null }}
+ */
+export function guessRepoFromImage(image) {
+  const ref = parseImageRef(image);
+  // ghcr.io/<namespace>/<name> — namespace IS a GitHub org/user, so this is
+  // usually correct.
+  if (ref.type === 'ghcr' && ref.namespace && ref.name) {
+    return { guessedRepo: `${ref.namespace}/${ref.name}`, guessConfidence: 'high' };
+  }
+  // Docker Hub, non-official (namespace !== 'library') — a common convention
+  // (Hub username == GitHub username) but not guaranteed.
+  if (ref.type === 'hub' && ref.namespace && ref.namespace !== 'library' && ref.name) {
+    return { guessedRepo: `${ref.namespace}/${ref.name}`, guessConfidence: 'medium' };
+  }
+  // Docker Hub official images (library/*) and arbitrary OCI hosts have no
+  // reliable 1:1 GitHub mapping — don't guess.
+  return { guessedRepo: null, guessConfidence: null };
+}
+
 const SEMVER_RE = /^v?\d+\.\d+/;
 
 /**

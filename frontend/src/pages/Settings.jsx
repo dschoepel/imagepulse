@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api.js';
+import { apiFetch, getIgnoredImages, unignoreImage } from '../api.js';
 
 function Toggle({ checked, onChange }) {
   return (
@@ -111,6 +111,19 @@ export default function Settings() {
   const [ntfyStatus, setNtfyStatus] = useState(null);
   const [emailStatus, setEmailStatus] = useState(null);
   const [retentionStatus, setRetentionStatus] = useState(null);
+
+  const [ignoredImages, setIgnoredImages] = useState([]);
+  function loadIgnoredImages() {
+    getIgnoredImages()
+      .then((d) => { if (d.ok) setIgnoredImages(d.images); })
+      .catch(() => {});
+  }
+  useEffect(() => { loadIgnoredImages(); }, []);
+  function handleUnignore(image) {
+    unignoreImage(image)
+      .then(() => setIgnoredImages((prev) => prev.filter((i) => i.image !== image)))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     apiFetch('/settings')
@@ -419,6 +432,32 @@ export default function Settings() {
           {pruneStatus?.pending && <p className="text-sm text-gray-500">Processing…</p>}
           {!pruneStatus?.pending && <StatusMsg status={pruneStatus} />}
         </div>
+      </Section>
+
+      {/* Ignored Images */}
+      <Section title="Ignored Images">
+        <p className="text-xs text-gray-500">
+          Images with events but no mapping normally show up as an "unmapped image"
+          notification (sidebar badge + Dashboard list). Images you've ignored from there
+          are listed here and can be un-ignored to have them reappear.
+        </p>
+        {ignoredImages.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">No ignored images</p>
+        ) : (
+          <ul className="divide-y divide-gray-100 border border-gray-200 rounded-md">
+            {ignoredImages.map((i) => (
+              <li key={i.image} className="flex items-center justify-between gap-3 px-3 py-2">
+                <span className="font-mono text-xs text-gray-700 truncate">{i.image}</span>
+                <button
+                  onClick={() => handleUnignore(i.image)}
+                  className="text-xs text-indigo-600 hover:underline whitespace-nowrap shrink-0"
+                >
+                  Un-ignore
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       {/* Prune confirmation modal */}

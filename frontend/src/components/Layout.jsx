@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import pkg from '../../package.json';
+import { getUnmappedCount } from '../api.js';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: Squares2X2Icon },
@@ -57,7 +58,7 @@ function Breadcrumb() {
   );
 }
 
-function NavItem({ to, label, Icon, collapsed, onNavigate }) {
+function NavItem({ to, label, Icon, collapsed, onNavigate, badgeCount = 0 }) {
   return (
     <div className="relative group">
       <NavLink
@@ -69,8 +70,19 @@ function NavItem({ to, label, Icon, collapsed, onNavigate }) {
            ${isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`
         }
       >
-        <Icon className="w-5 h-5 shrink-0" />
+        <span className="relative shrink-0">
+          <Icon className="w-5 h-5" />
+          {collapsed && badgeCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-orange-400"
+                  title={`${badgeCount} unmapped image${badgeCount === 1 ? '' : 's'}`} />
+          )}
+        </span>
         {!collapsed && <span>{label}</span>}
+        {!collapsed && badgeCount > 0 && (
+          <span className="ml-auto bg-orange-400 text-white text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
+            {badgeCount}
+          </span>
+        )}
       </NavLink>
       {collapsed && (
         <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50
@@ -106,6 +118,26 @@ export default function Layout() {
       .catch(() => {});
   }, []);
 
+  // Unmapped-image count — polled so the Mappings badge stays current without
+  // requiring a page navigation/reload.
+  const [unmappedCount, setUnmappedCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    function poll() {
+      getUnmappedCount()
+        .then((d) => { if (!cancelled && d.ok) setUnmappedCount(d.count); })
+        .catch(() => {});
+    }
+    poll();
+    const id = setInterval(poll, 60000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  const navItemsWithBadge = navItems.map((item) => ({
+    ...item,
+    badgeCount: item.to === '/mappings' ? unmappedCount : 0,
+  }));
+
   return (
     <div className="flex h-screen bg-gray-50">
 
@@ -139,8 +171,8 @@ export default function Layout() {
           </button>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map(({ to, label, Icon }) => (
-            <NavItem key={to} to={to} label={label} Icon={Icon}
+          {navItemsWithBadge.map(({ to, label, Icon, badgeCount }) => (
+            <NavItem key={to} to={to} label={label} Icon={Icon} badgeCount={badgeCount}
                      collapsed={false} onNavigate={() => setDrawerOpen(false)} />
           ))}
         </nav>
@@ -195,8 +227,8 @@ export default function Layout() {
         )}
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map(({ to, label, Icon }) => (
-            <NavItem key={to} to={to} label={label} Icon={Icon}
+          {navItemsWithBadge.map(({ to, label, Icon, badgeCount }) => (
+            <NavItem key={to} to={to} label={label} Icon={Icon} badgeCount={badgeCount}
                      collapsed={collapsed} onNavigate={null} />
           ))}
         </nav>

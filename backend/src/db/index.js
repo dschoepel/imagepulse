@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { guessRepoFromImage } from '../services/registry.js';
 
 const DB_PATH = process.env.DB_PATH || './data/imagepulse.db';
 
@@ -57,7 +58,16 @@ export function initDb() {
       key        TEXT PRIMARY KEY,
       value      TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS ignored_images (
+      image      TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  // events.image has no natural index; the unmapped-images anti-join is polled
+  // by the frontend every ~60s, so index it.
+  db.exec('CREATE INDEX IF NOT EXISTS idx_events_image ON events(image)');
 
   try { db.exec('ALTER TABLE events ADD COLUMN notification_title TEXT'); } catch {}
   try { db.exec('ALTER TABLE events ADD COLUMN notification_body TEXT'); } catch {}
@@ -182,6 +192,42 @@ export function getEventStats() {
     uniqueImages: row.uniqueImages,
     lastCreatedAt: row.lastCreatedAt ?? null,
   };
+}
+
+// --- Unmapped images (events with no matching mapping and not ignored) ---
+
+export function getUnmappedImages() {
+  const rows = db.prepare(`
+    SELECT e.image AS image, COUNT(*) AS eventCount, MAX(e.created_at) AS lastSeen
+    FROM events e
+    WHERE NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
+      AND NOT EXISTS (SELECT 1 FROM ignored_images i WHERE i.image = e.image)
+    GROUP BY e.image
+    ORDER BY lastSeen DESC
+  `).all();
+  return rows.map((r) => ({ ...r, ...guessRepoFromImage(r.image) }));
+}
+
+export function getUnmappedCount() {
+  return db.prepare(`
+    SELECT COUNT(*) AS cnt FROM (
+      SELECT DISTINCT e.image FROM events e
+      WHERE NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
+        AND NOT EXISTS (SELECT 1 FROM ignored_images i WHERE i.image = e.image)
+    )
+  `).get().cnt;
+}
+
+export function ignoreImage(image) {
+  db.prepare('INSERT OR IGNORE INTO ignored_images (image) VALUES (?)').run(image);
+}
+
+export function unignoreImage(image) {
+  return db.prepare('DELETE FROM ignored_images WHERE image = ?').run(image).changes;
+}
+
+export function getIgnoredImages() {
+  return db.prepare('SELECT image, created_at FROM ignored_images ORDER BY created_at DESC').all();
 }
 
 export function getSetting(key) {

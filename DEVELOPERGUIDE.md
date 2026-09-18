@@ -210,7 +210,7 @@ On startup and every 24 hours, `runRetention()` calls `pruneOldEvents(days)` to 
 
 Single file; exports all query helpers. Key points:
 
-- **`initDb()`** — `CREATE TABLE IF NOT EXISTS` for `events`, `event_archive`, `mappings`, `settings`; then try/catch `ALTER TABLE` for each new column added in later versions (safe migration pattern)
+- **`initDb()`** — `CREATE TABLE IF NOT EXISTS` for `events`, `event_archive`, `mappings`, `settings`, `ignored_images`; then try/catch `ALTER TABLE` for each new column added in later versions (safe migration pattern); also creates `idx_events_image` since the unmapped-images query is polled
 - **`seedSettingsFromEnv()`** — `INSERT OR IGNORE` so env vars only apply on first run
 - **`insertEvent()`** / **`markNotified()`** — two-phase write: insert without notification data, then update once notifications are sent
 - All query functions are synchronous (better-sqlite3)
@@ -324,6 +324,15 @@ Same columns as `events` plus `archived_at TEXT`. Populated by `POST /api/settin
 
 > Hosts are not stored in mappings — they are derived at query time from `events.raw_payload` via `json_extract` + `GROUP_CONCAT`.
 
+### `ignored_images`
+
+| Column | Type | Notes |
+|---|---|---|
+| `image` | TEXT PK | Permanently dismissed from the unmapped-image notification |
+| `created_at` | TEXT | ISO datetime |
+
+> "Unmapped" is computed live (`getUnmappedImages()`/`getUnmappedCount()` in `db/index.js`) as events whose `image` has no row in `mappings` **and** no row in `ignored_images` — no state is stored on `events`/`mappings` themselves.
+
 ### `settings`
 
 | Column | Type |
@@ -371,6 +380,11 @@ All routes are prefixed `/api`. Full request/response shapes are in `docs/api.md
 | `PUT` | `/settings/mappings` | Create mapping |
 | `PATCH` | `/settings/mappings/:image` | Update mapping (supports image rename) |
 | `DELETE` | `/settings/mappings/:image` | Delete mapping |
+| `GET` | `/settings/unmapped-images` | Images with events but no mapping, incl. guessed repo |
+| `GET` | `/settings/unmapped-count` | Just the count, for the sidebar badge |
+| `POST` | `/settings/ignored-images` | Permanently ignore an image (won't show as unmapped) |
+| `GET` | `/settings/ignored-images` | List ignored images |
+| `DELETE` | `/settings/ignored-images/:image` | Un-ignore an image |
 | `GET` | `/version` | `{ current, latest, latestUrl, hasUpdate }` — cached 1 hour |
 
 ---

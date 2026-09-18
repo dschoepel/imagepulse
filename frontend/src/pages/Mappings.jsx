@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiFetch, validateRepo, validateUrl } from '../api.js';
+import { useSearchParams, Link } from 'react-router-dom';
+import { apiFetch, validateRepo, validateUrl, getUnmappedCount } from '../api.js';
 
 // ── Validation helpers ────────────────────────────────────────────────────────
 
@@ -119,16 +120,21 @@ const PER_PAGE_OPTIONS = [5, 10, 25, 50, 100];
 
 // ── Add Mapping Modal ─────────────────────────────────────────────────────────
 
-function AddMappingModal({ onClose, onAdded }) {
-  const [newImage,        setNewImage]        = useState('');
+function AddMappingModal({ onClose, onAdded, initialImage = '', initialRepo = '' }) {
+  const [newImage,        setNewImage]        = useState(initialImage);
   const [newLinkType,     setNewLinkType]     = useState('github');
-  const [newRepo,         setNewRepo]         = useState('');
+  const [newRepo,         setNewRepo]         = useState(initialRepo);
   const [newUrl,          setNewUrl]          = useState('');
   const [newPinnedTag,    setNewPinnedTag]    = useState('');
   const [addImageError,   setAddImageError]   = useState(null);
   const [addLinkError,    setAddLinkError]    = useState(null);
   const [addLinkChecking, setAddLinkChecking] = useState(false);
   const [addError,        setAddError]        = useState(null);
+
+  // Arrived pre-filled from an "unmapped image" notification — lock the image
+  // field so it can't drift from what events.image actually reports (the
+  // mapping lookup is an exact string match).
+  const lockImage = Boolean(initialImage);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -190,11 +196,18 @@ function AddMappingModal({ onClose, onAdded }) {
               type="text"
               placeholder="e.g. docker.io/library/nginx"
               value={newImage}
-              onChange={(e) => { setNewImage(e.target.value); setAddImageError(null); }}
-              onBlur={() => setAddImageError(validateImage(newImage))}
-              className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addImageError)}`}
+              readOnly={lockImage}
+              onChange={lockImage ? undefined : (e) => { setNewImage(e.target.value); setAddImageError(null); }}
+              onBlur={lockImage ? undefined : () => setAddImageError(validateImage(newImage))}
+              className={`border rounded px-3 py-2 text-sm ${
+                lockImage
+                  ? 'bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200'
+                  : `focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addImageError)}`
+              }`}
             />
-            <FieldError err={addImageError} />
+            {lockImage
+              ? <p className="text-xs text-gray-400">Locked — must match the image reported by events</p>
+              : <FieldError err={addImageError} />}
           </div>
 
           {/* Link type toggle + conditional input */}
@@ -210,9 +223,13 @@ function AddMappingModal({ onClose, onAdded }) {
                   onChange={(e) => { setNewRepo(e.target.value); setAddLinkError(null); }}
                   className={`border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${borderClass(addLinkError)}`}
                 />
-                {addLinkChecking
-                  ? <p className="text-xs text-gray-400 mt-1">Checking GitHub…</p>
-                  : <FieldError err={addLinkError} />}
+                {addLinkChecking ? (
+                  <p className="text-xs text-gray-400 mt-1">Checking GitHub…</p>
+                ) : addLinkError ? (
+                  <FieldError err={addLinkError} />
+                ) : initialRepo && newRepo === initialRepo ? (
+                  <p className="text-xs text-amber-600 mt-1">Guessed from image name — please verify</p>
+                ) : null}
               </div>
             ) : (
               <div className="flex flex-col gap-1">
@@ -275,6 +292,27 @@ export default function Mappings() {
   const [perPage, setPerPage]     = useState(25);
   const [page, setPage]           = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [unmappedCount, setUnmappedCount] = useState(0);
+
+  // Deep-link from the "unmapped image" notification: ?image=<x>&open=1[&repo=<guess>]
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [prefill, setPrefill] = useState(null); // { image, repo } | null
+  useEffect(() => {
+    if (searchParams.get('open') === '1') {
+      setPrefill({
+        image: searchParams.get('image') || '',
+        repo: searchParams.get('repo') || '',
+      });
+      setShowAddModal(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
+
+  function closeAddModal() {
+    setShowAddModal(false);
+    setPrefill(null);
+    if (searchParams.toString()) setSearchParams({}, { replace: true });
+  }
 
   // Edit state
   const [editingId,        setEditingId]        = useState(null);
@@ -294,6 +332,12 @@ export default function Mappings() {
       .catch((err) => setError(err.message));
   }
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    getUnmappedCount()
+      .then((d) => { if (d.ok) setUnmappedCount(d.count); })
+      .catch(() => {});
+  }, []);
 
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [filter, hostFilter]);
@@ -393,6 +437,13 @@ export default function Mappings() {
           + Add Mapping
         </button>
       </div>
+
+      {unmappedCount > 0 && (
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          You have {unmappedCount} unmapped image{unmappedCount === 1 ? '' : 's'} — see them on the{' '}
+          <Link to="/dashboard" className="underline hover:text-amber-800">Dashboard</Link>.
+        </p>
+      )}
 
       {error && <p className="text-red-600 text-sm">Error: {error}</p>}
 
@@ -601,8 +652,14 @@ export default function Mappings() {
       {/* Add Mapping Modal */}
       {showAddModal && (
         <AddMappingModal
-          onClose={() => setShowAddModal(false)}
-          onAdded={() => { setShowAddModal(false); load(); }}
+          initialImage={prefill?.image || ''}
+          initialRepo={prefill?.repo || ''}
+          onClose={closeAddModal}
+          onAdded={() => {
+            closeAddModal();
+            load();
+            getUnmappedCount().then((d) => { if (d.ok) setUnmappedCount(d.count); }).catch(() => {});
+          }}
         />
       )}
     </div>
