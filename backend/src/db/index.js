@@ -196,11 +196,16 @@ export function getEventStats() {
 
 // --- Unmapped images (events with no matching mapping and not ignored) ---
 
+// Events with a blank image (e.g. an unrecognized/empty webhook payload —
+// parseWebhook's fallback for anything without diun_version) aren't a real
+// image to map, so they're excluded here rather than nagging the user about
+// them forever.
 export function getUnmappedImages() {
   const rows = db.prepare(`
     SELECT e.image AS image, COUNT(*) AS eventCount, MAX(e.created_at) AS lastSeen
     FROM events e
-    WHERE NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
+    WHERE TRIM(e.image) != ''
+      AND NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
       AND NOT EXISTS (SELECT 1 FROM ignored_images i WHERE i.image = e.image)
     GROUP BY e.image
     ORDER BY lastSeen DESC
@@ -212,7 +217,8 @@ export function getUnmappedCount() {
   return db.prepare(`
     SELECT COUNT(*) AS cnt FROM (
       SELECT DISTINCT e.image FROM events e
-      WHERE NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
+      WHERE TRIM(e.image) != ''
+        AND NOT EXISTS (SELECT 1 FROM mappings m WHERE m.image = e.image)
         AND NOT EXISTS (SELECT 1 FROM ignored_images i WHERE i.image = e.image)
     )
   `).get().cnt;

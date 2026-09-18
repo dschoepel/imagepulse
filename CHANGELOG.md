@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.7.1] — 2026-09-18
+
+### Fixed
+
+- **Digest-pinned image parsing** — `normaliseDiun` split the raw image reference on the last `:`, which for a digest-pinned reference (e.g. `ghcr.io/owner/repo@sha256:abcd1234...`) landed on the colon *inside* `sha256:` rather than a real tag separator, producing `image = "...repo@sha256"` and `tag = "<hex digest>"`. Found via the new unmapped-image notification surfacing several such rows. Now strips a trailing `@<algo>:<hex>` digest pin before splitting on the tag, handling both `repo@sha256:digest` and `repo:tag@sha256:digest` forms.
+- **Blank-image events counted as "unmapped"** — an unrecognized/empty webhook payload (e.g. a bare `POST /api/webhook` with no body) is stored as an event with `image: ''` per `parseWebhook`'s existing fallback; the new unmapped-image notification was treating that as a real image to map. `getUnmappedImages()`/`getUnmappedCount()` now exclude blank-image events.
+
+---
+
 ## [1.7.0] — 2026-09-18
 
 ### Added

@@ -2,6 +2,18 @@
 
 ---
 
+## [1.7.1] — 2026-09-18
+
+### Digest-pinned image parsing fix
+
+The new unmapped-image notification (v1.7.0) surfaced several images whose stored name ended in a stray `@sha256` — a parsing bug, not a data issue. When diun reports a digest-pinned image (`ghcr.io/owner/repo@sha256:abcd1234...` — common for containers pinned by digest rather than tag), the tag-splitting logic found the colon *inside* `sha256:` instead of a real tag separator, so the digest algorithm name stuck to the image and the hex digest landed in the tag field instead.
+
+Fixed: a trailing `@<algo>:<hex>` digest pin is now stripped before splitting on the tag, whether or not a tag is also present (`repo@sha256:digest` and `repo:tag@sha256:digest` both parse correctly now). Existing affected rows in your database aren't touched automatically — see the cleanup query in the developer notes if you want to fix historical entries, or just use the "Ignore" action on them from the Dashboard.
+
+The same investigation also turned up a second, smaller gap: an event with a blank image (from an unrecognized or empty webhook payload) was showing up in the unmapped-image notification as if it were a real image to map. Those are now excluded — no database changes needed, existing blank-image events simply stop appearing in the list.
+
+---
+
 ## [1.7.0] — 2026-09-18
 
 ### Unmapped-image notifications
