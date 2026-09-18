@@ -2,6 +2,14 @@
 
 ---
 
+## [1.7.2] — 2026-09-18
+
+### LinuxServer.io repo guess fix
+
+The unmapped-image repo guess was wrong for every LinuxServer.io image (`swag`, `nextcloud`, `plex`, etc.) — it was guessing `linuxserver/<name>` when their actual GitHub repos all use a `docker-` prefix (`linuxserver/docker-swag`, `linuxserver/docker-nextcloud`, ...). That convention is consistent across their entire catalog, so both `docker.io/linuxserver/<name>` and their `lscr.io/linuxserver/<name>` registry mirror now guess `linuxserver/docker-<name>` at high confidence instead of the generic medium-confidence Docker Hub guess.
+
+---
+
 ## [1.7.1] — 2026-09-18
 
 ### Digest-pinned image parsing fix

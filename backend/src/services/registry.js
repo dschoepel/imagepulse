@@ -65,13 +65,27 @@ export function guessRepoFromImage(image) {
   if (ref.type === 'ghcr' && ref.namespace && ref.name) {
     return { guessedRepo: `${ref.namespace}/${ref.name}`, guessConfidence: 'high' };
   }
+
+  // LinuxServer.io images — via Docker Hub (docker.io/linuxserver/<name>) or
+  // their own registry mirror (lscr.io/linuxserver/<name>, which parses as a
+  // generic 'oci' host below) — are unusually consistent: every one of their
+  // ~100+ images lives on GitHub as linuxserver/docker-<name>. Reliable
+  // enough to rate 'high' rather than the generic Docker Hub 'medium' guess.
+  const linuxserverName =
+    ref.type === 'hub' && ref.namespace === 'linuxserver' && ref.name ? ref.name :
+    ref.type === 'oci' && ref.host === 'lscr.io' && ref.path?.startsWith('linuxserver/') ? ref.path.slice('linuxserver/'.length) :
+    null;
+  if (linuxserverName) {
+    return { guessedRepo: `linuxserver/docker-${linuxserverName}`, guessConfidence: 'high' };
+  }
+
   // Docker Hub, non-official (namespace !== 'library') — a common convention
   // (Hub username == GitHub username) but not guaranteed.
   if (ref.type === 'hub' && ref.namespace && ref.namespace !== 'library' && ref.name) {
     return { guessedRepo: `${ref.namespace}/${ref.name}`, guessConfidence: 'medium' };
   }
-  // Docker Hub official images (library/*) and arbitrary OCI hosts have no
-  // reliable 1:1 GitHub mapping — don't guess.
+  // Docker Hub official images (library/*) and other arbitrary OCI hosts have
+  // no reliable 1:1 GitHub mapping — don't guess.
   return { guessedRepo: null, guessConfidence: null };
 }
 

@@ -5,7 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [1.7.1] — 2026-09-18
+## [1.7.2] — 2026-09-18
+
+### Changed
+
+- **LinuxServer.io repo guess** — `guessRepoFromImage` now special-cases `docker.io/linuxserver/<name>` and their `lscr.io/linuxserver/<name>` registry mirror, guessing `linuxserver/docker-<name>` at **high** confidence (their GitHub org uses a `docker-` prefix on every image repo — e.g. `linuxserver/docker-swag`, `linuxserver/docker-nextcloud`) rather than the generic Docker Hub `<namespace>/<name>` medium-confidence guess, which was wrong for every LinuxServer image.
 
 ### Fixed
 
