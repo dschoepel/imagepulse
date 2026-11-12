@@ -255,7 +255,7 @@ function AddMappingModal({ onClose, onAdded, initialImage = '', initialRepo = ''
             </label>
             <input
               type="text"
-              placeholder="e.g. 1.25.3 or v34.0.0"
+              placeholder="e.g. 1.25.3, v34.0.0, or 2 (major only)"
               value={newPinnedTag}
               onChange={(e) => setNewPinnedTag(e.target.value)}
               className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -555,7 +555,7 @@ export default function Mappings() {
                         <label className="text-xs text-gray-500">Pinned tag</label>
                         <input
                           type="text"
-                          placeholder="e.g. 1.25.3"
+                          placeholder="e.g. 1.25.3 or 2"
                           value={editPinnedTag}
                           onChange={(e) => setEditPinnedTag(e.target.value)}
                           className="border border-gray-300 rounded px-2 py-1 text-xs w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"

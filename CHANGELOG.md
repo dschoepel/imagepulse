@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.8.0] — 2026-11-12
+
+### Added
+
+- **Major-only pinned tags** — a pin of just a major version (`2`, `v2`, or with a variant: `2-slim`, `2-slim-rootless`) is now watched instead of being skipped as "not a version". A floating major tag already follows every release in its line, so the watcher alerts only when a **stable higher major** ships (e.g. pin `2` → "uptime-kuma: major update available (3.0.0)"); pre-releases (`3.0.0-beta.1`) and channel tags (`nightly3`) don't count, and the pin's variant is respected (`2-slim` → `3.0.0-slim`). New `parsePinnedTag()` in `services/tagVersions.js`; candidate tags are still parsed strictly so floating aliases (`2`, `1`) in a registry's tag list are never mistaken for releases. Pinned-tag input placeholders on the Mappings page mention the new form.
+
+---
+
 ## [1.7.3] — 2026-11-12
 
 ### Fixed

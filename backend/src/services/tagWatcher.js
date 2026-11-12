@@ -4,7 +4,7 @@ import { sendNtfy } from './ntfy.js';
 import { sendEmail } from './email.js';
 import { parseImageRef } from './registry.js';
 import { listOciTags } from './registryTags.js';
-import { analyzeVersions, normalizeTag } from './tagVersions.js';
+import { analyzeVersions, normalizeTag, parsePinnedTag } from './tagVersions.js';
 
 async function fetchHubTags(namespace, name) {
   try {
@@ -35,14 +35,14 @@ async function checkOneMapping(db, mapping) {
     "UPDATE mappings SET pinned_tag_last_checked = datetime('now') WHERE image = ?"
   ).run(mapping.image);
 
-  if (!normalizeTag(mapping.pinned_tag)) {
+  if (!parsePinnedTag(mapping.pinned_tag)) {
     // Not a version tag, so there's nothing to compare against — say so instead of
     // silently never alerting.
     const key = `${mapping.image}:${mapping.pinned_tag}`;
     if (!_warnedUnparseable.has(key)) {
       _warnedUnparseable.add(key);
       logger.warn({ image: mapping.image, pinned: mapping.pinned_tag },
-        'Pinned tag is not a version (expected e.g. v1.2.3, 1.2, version-1.2.3); skipping pinned tag check');
+        'Pinned tag is not a version (expected e.g. v1.2.3, 1.2, version-1.2.3, or a major like 2); skipping pinned tag check');
     }
     markChecked();
     return;
@@ -78,7 +78,7 @@ async function checkOneMapping(db, mapping) {
   if (dedupKey === mapping.pinned_tag_notified) return;
 
   const imageName     = mapping.image.split('/').pop();
-  const pinnedNorm    = normalizeTag(mapping.pinned_tag) || mapping.pinned_tag;
+  const pinnedNorm    = parsePinnedTag(mapping.pinned_tag).core;
   const sameMajorDisp = newerSameMajor ? (normalizeTag(newerSameMajor) || newerSameMajor) : null;
   const overallDisp   = newestOverall  ? (normalizeTag(newestOverall)  || newestOverall)  : null;
   const majorLine     = `${pinnedNorm.split('.')[0]}.x`;

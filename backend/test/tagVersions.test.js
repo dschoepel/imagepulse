@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  parseTag, normalizeTag, isPrerelease, compareVersions, analyzeVersions,
+  parseTag, parsePinnedTag, normalizeTag, isPrerelease, compareVersions, analyzeVersions,
 } from '../src/services/tagVersions.js';
 
 // Real tag lists captured from the registries (see each file's _source/_note).
@@ -12,6 +12,7 @@ const immichServer = fixture('immich-server-tags');
 const immichMl = fixture('immich-machine-learning-tags');
 const swag = fixture('linuxserver-swag-tags');
 const nginx = fixture('nginx-tags');
+const kuma = fixture('uptime-kuma-tags');
 
 describe('normalizeTag', () => {
   for (const [tag, expected] of [
@@ -180,8 +181,52 @@ describe('analyzeVersions — alpine-suffixed tags (nginx)', () => {
   });
 });
 
+describe('parsePinnedTag — major-only pins', () => {
+  test('accepts bare majors, with optional v and flavor', () => {
+    assert.deepEqual(
+      ['2', 'v2', '2-slim', '2-slim-rootless'].map((t) => {
+        const p = parsePinnedTag(t);
+        return [p.core, p.flavor, p.majorOnly];
+      }),
+      [['2', '', true], ['2', '', true], ['2', 'slim', true], ['2', 'slim-rootless', true]]
+    );
+  });
+  test('full versions are not major-only; non-versions still rejected', () => {
+    assert.equal(parsePinnedTag('2.5.11').majorOnly, false);
+    assert.equal(parsePinnedTag('alpine'), null);
+    assert.equal(parsePinnedTag('nightly3'), null);
+    assert.equal(parsePinnedTag('2.x'), null);
+  });
+  test('candidates stay strict: floating "2"/"1" aliases are not versions', () => {
+    assert.equal(normalizeTag('2'), null);
+    assert.equal(parseTag('2-slim'), null);
+  });
+});
+
+describe('analyzeVersions — major-only pins (uptime-kuma)', () => {
+  test('pin "2": no stable 3.x yet → nothing (2.x releases, betas, nightly3 ignored)', () => {
+    assert.deepEqual(analyzeVersions('2', kuma.tags), { newerSameMajor: null, newestOverall: null });
+  });
+  test('pin "2": stable 3.0.0 appears → major update', () => {
+    assert.deepEqual(analyzeVersions('2', ['3.0.0-beta.1', '3', ...kuma.tags, '3.0.0', '3.0.0-slim']), {
+      newerSameMajor: null, newestOverall: '3.0.0',
+    });
+  });
+  test('pin "2": a 3.0.0 beta alone does not alert', () => {
+    assert.deepEqual(analyzeVersions('2', ['3.0.0-beta.1', '3.0.0-beta-slim.1', ...kuma.tags]), {
+      newerSameMajor: null, newestOverall: null,
+    });
+  });
+  test('pin "2-slim" follows -slim', () => {
+    assert.equal(analyzeVersions('2-slim', [...kuma.tags, '3.0.0', '3.0.0-slim']).newestOverall, '3.0.0-slim');
+  });
+  test('pin "1" sees 2.x as the major update', () => {
+    assert.equal(normalizeTag(analyzeVersions('1', kuma.tags).newestOverall), '2.5.11');
+  });
+});
+
 describe('analyzeVersions — unparseable pins', () => {
-  for (const pin of ['alpine', '2', 'latest', 'stable-alpine3.23', '']) {
+  for (const pin of ['alpine', 'latest', 'stable-alpine3.23', 'nightly3', '']) {
     test(JSON.stringify(pin), () => {
       assert.deepEqual(analyzeVersions(pin, immichServer.tags), { newerSameMajor: null, newestOverall: null });
     });

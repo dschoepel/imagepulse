@@ -2,6 +2,16 @@
 
 ---
 
+## [1.8.0] — 2026-11-12
+
+### Pin to a major version
+
+You can now pin an image to just its major version — `2`, `v2`, or a variant like `2-slim` — the same way many images publish a floating major tag (uptime-kuma's `2`, for example). Previously the pinned-tag watcher couldn't compare a pin like that and quietly skipped it.
+
+Because a floating major tag already moves with every release in its line (`2` picks up 2.5.10, 2.5.11, … on its own), ImagePulse doesn't alert on those. It tells you when a **new major version** is released — pinned to `2`, you'll get "major update available (3.0.0)" when a stable 3.x ships. Betas, release candidates and nightly tags for the next major don't trigger it, and if you pinned a variant (`2-slim`) you'll be told about the matching variant (`3.0.0-slim`).
+
+---
+
 ## [1.7.3] — 2026-11-12
 
 ### Pinned-tag watcher now actually sees new releases on ghcr.io

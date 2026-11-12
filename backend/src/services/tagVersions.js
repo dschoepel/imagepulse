@@ -36,9 +36,30 @@ export function parseTag(tag) {
   if (typeof tag !== 'string') return null;
   const m = VERSION_RE.exec(tag);
   if (!m) return null;
+  return buildParsed(tag, m[1], m[2]);
+}
 
-  const core = m[1];
-  const tokens = m[2].split(/[-_.+]/).filter(Boolean);
+// Major-only pin: "2", "v2", "2-slim", "2-slim-rootless". The character after the
+// major must be a separator other than "." (x.y forms are handled by VERSION_RE).
+const MAJOR_ONLY_RE = /^(?:version-)?v?(\d+)((?:[-_+].*)?)$/;
+
+/**
+ * Parse a *pinned* tag. Accepts everything parseTag does, plus major-only
+ * floating tags ("2", "2-slim") — marked `majorOnly: true`.
+ * Candidate tags from a registry must still go through parseTag, so floating
+ * aliases like "2" or "1" in a tag list are never mistaken for releases.
+ */
+export function parsePinnedTag(tag) {
+  const full = parseTag(tag);
+  if (full) return { ...full, majorOnly: false };
+  if (typeof tag !== 'string') return null;
+  const m = MAJOR_ONLY_RE.exec(tag);
+  if (!m) return null;
+  return { ...buildParsed(tag, m[1], m[2]), majorOnly: true };
+}
+
+function buildParsed(tag, core, rest) {
+  const tokens = rest.split(/[-_.+]/).filter(Boolean);
   let prerelease = null;
   let inPre = false;
   const flavorParts = [];
@@ -131,6 +152,8 @@ export function compareVersions(a, b) {
  *    matches "v3.4.1-cuda"; "1.31.1-alpine3.23" only matches "-alpine…" tags).
  *  - Pre-release tags are ignored unless the pin itself is a pre-release.
  *  - Among tags of equal precedence, the one shaped like the pin wins.
+ *  - A major-only pin ("2", "2-slim") floats within its major line, so only a
+ *    higher major is reported (newestOverall); newerSameMajor is always null.
  *
  * @param {string} pinnedTag
  * @param {string[]} allTags
@@ -138,7 +161,7 @@ export function compareVersions(a, b) {
  *   newestOverall is only reported when it is a higher major than the pin.
  */
 export function analyzeVersions(pinnedTag, allTags) {
-  const pinned = parseTag(pinnedTag);
+  const pinned = parsePinnedTag(pinnedTag);
   if (!pinned) return { newerSameMajor: null, newestOverall: null };
   const allowPre = pinned.prerelease !== null;
   const pinnedMajor = pinned.nums[0];
@@ -159,6 +182,7 @@ export function analyzeVersions(pinnedTag, allTags) {
     if (p.flavor !== pinned.flavor) continue;
     if (p.prerelease && !allowPre) continue;
     if (compareParsed(p, pinned) <= 0) continue;
+    if (pinned.majorOnly && p.nums[0] <= pinnedMajor) continue;
 
     const cand = { tag, p };
     if (p.nums[0] === pinnedMajor && better(cand, sameMajor)) sameMajor = cand;

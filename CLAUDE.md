@@ -92,6 +92,8 @@ docker compose up -d      # full container build/run, per docker-compose.yml
 - **Version comparison**: use `tagVersions.js`. Pre-release tags (`-rc`, `-beta`, `-dev`, …)
   are ignored unless the pin is itself a pre-release, a final release always outranks its
   rcs, and candidates must match the pin's flavor (`-cuda`, `-alpine`, `-ls`, …).
+  Pins go through `parsePinnedTag()` (also accepts major-only `2`/`2-slim`, which only
+  alert on a higher stable major); candidate tags go through the strict `parseTag()`.
 
 ## Release process
 

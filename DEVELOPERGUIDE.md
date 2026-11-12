@@ -261,7 +261,9 @@ Results cached in memory for 1 hour (including `null` to avoid hammering registr
 - orders with `compareVersions` — a final release always outranks its own rcs, so it can't be suppressed by the `pinned_tag_notified` dedup after an rc;
 - tie-breaks equal versions toward the pin's shape (`version-5.9.0` → `version-5.10.0`, not `5.10.0`).
 
-Pins that aren't versions at all (`alpine`, `2`) are skipped with a one-time `warn` per process. Docker Hub is fetched by `fetchHubTags` (newest-first ordering, 5 pages) and doesn't need the OCI pagination.
+**Major-only pins** (`2`, `v2`, `2-slim`) are parsed by `parsePinnedTag()` (`majorOnly: true`). A floating major tag already tracks every 2.x release, so only a stable higher major is reported (`newestOverall`; `newerSameMajor` is always null) — pre-releases like `3.0.0-beta.1` and aliases like `nightly3` don't count. Candidate tags still go through the strict `parseTag()`, so floating aliases in a tag list (`2`, `1`) are never treated as releases.
+
+Pins that aren't versions at all (`alpine`, `latest`) are skipped with a one-time `warn` per process. Docker Hub is fetched by `fetchHubTags` (newest-first ordering, 5 pages) and doesn't need the OCI pagination.
 
 Tests: `npm test` (see `backend/test/`; fixtures are real captured tag lists). `LIVE_REGISTRY_TESTS=1 npm test` also runs against live ghcr.io/lscr.io.
 
