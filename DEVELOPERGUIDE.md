@@ -60,7 +60,10 @@ imagepulse/
 │           ├── email.js          # nodemailer SMTP
 │           ├── emailTemplate.js  # HTML email builder (uses marked)
 │           ├── github.js         # GitHub Releases API
-│           └── registry.js       # Docker registry digest→version resolver
+│           ├── registry.js       # Docker registry digest→version resolver
+│           ├── registryTags.js   # Paginated OCI /tags/list (ghcr, lscr, generic)
+│           ├── tagVersions.js    # Pure tag parsing / comparison (unit-tested)
+│           └── tagWatcher.js     # Pinned-tag watcher (startup + every 6h)
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
@@ -233,10 +236,34 @@ The most complex route. Orchestrates steps 1–10 from the data flow section abo
 For `latest`-tagged images, attempts to find the semver tag that shares the same manifest digest. Strategy varies by registry:
 
 - **Docker Hub** — queries `hub.docker.com/v2/repositories/{image}/tags` (up to 3 pages)
-- **GHCR** (`ghcr.io`) — anonymous token fetch, then HEAD requests per tag comparing `Docker-Content-Digest` header
-- **Generic OCI** — same pattern with dynamic host; unauthenticated first, falls back to token on 401
+- **GHCR** (`ghcr.io`) — anonymous token, full paginated tag list via `listOciTags()`, then HEAD requests on the 20 newest candidates (ranked by `compareVersions`, plain tags before `-variant` tags) comparing the `Docker-Content-Digest` header
+- **Generic OCI** — same pattern with dynamic host; unauthenticated first, falls back to the token realm named in the 401 `WWW-Authenticate` challenge
 
 Results cached in memory for 1 hour (including `null` to avoid hammering registries). Private registries are out of scope — skipped gracefully.
+
+### `src/services/registryTags.js` — paginated tag listing
+
+`listOciTags({ host, path, tokenFirst, filter })` → `{ tags, token, truncated, pages, seen, retries }` (or `null` if the first page fails). Things learned the hard way (v1.7.3):
+
+- **ghcr returns tags in push order, 100 per page by default.** The newest tags are on the last page, so a single request never sees a new release for an image with >100 tags. We request `?n=1000` (ghcr's max) and follow `Link: <…>; rel="next"`.
+- **ghcr's Link header says `n=0`**, which silently falls back to 100 per page; `nextPageUrl()` forces `n=1000` on every next link.
+- **Scale**: immich-server is ~33k tags / 34 pages; immich-machine-learning ~224k tags / 224 pages (~20 s). `filter` runs per page (default: version-like tags only) so commit/pr tags aren't held in memory. Cap: `MAX_PAGES = 500`.
+- **ghcr throttles bursts with 429** and no `Retry-After`; requests retry 429/503 up to 5 times (1, 2, 4, 8, 16 s).
+- **lscr.io delegates auth** — its 401 challenge names `realm="https://ghcr.io/token"`; `parseBearerChallenge()` follows it (before 1.7.3 every lscr.io lookup failed).
+- Hitting the cap, a failed later page, or a non-advancing Link all log `warn` and return the partial list with `truncated: true` — a partial list can miss an update but can't produce a false alert.
+
+### `src/services/tagVersions.js` / `tagWatcher.js` — pinned-tag watcher
+
+`parseTag()` splits a tag into numeric `core`, `prerelease` (`rc.1`, `beta2`, `b1`, `_55-dev`, …) and `flavor` (variant suffix with digits stripped: `-alpine3.23` → `alpine`, `-ls45` → `ls`, `-cuda` → `cuda`). `analyzeVersions(pinned, tags)`:
+
+- only considers tags with the **same flavor** as the pin (a `v3.3.6` pin never reports `v3.4.1-rknn`);
+- ignores **pre-releases** unless the pin is itself a pre-release;
+- orders with `compareVersions` — a final release always outranks its own rcs, so it can't be suppressed by the `pinned_tag_notified` dedup after an rc;
+- tie-breaks equal versions toward the pin's shape (`version-5.9.0` → `version-5.10.0`, not `5.10.0`).
+
+Pins that aren't versions at all (`alpine`, `2`) are skipped with a one-time `warn` per process. Docker Hub is fetched by `fetchHubTags` (newest-first ordering, 5 pages) and doesn't need the OCI pagination.
+
+Tests: `npm test` (see `backend/test/`; fixtures are real captured tag lists). `LIVE_REGISTRY_TESTS=1 npm test` also runs against live ghcr.io/lscr.io.
 
 ### `src/services/emailTemplate.js` — HTML email
 
@@ -432,6 +459,13 @@ cd backend && npm run dev     # uses nodemon
 
 # Frontend only
 cd frontend && npm run dev    # assumes backend is already running
+```
+
+### Tests
+
+```bash
+npm test                          # node:test, backend/test/*.test.js (offline, fixtures)
+LIVE_REGISTRY_TESTS=1 npm test    # + live ghcr.io / lscr.io checks (~30 s)
 ```
 
 ### Building the frontend

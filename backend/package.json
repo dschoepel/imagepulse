@@ -1,12 +1,13 @@
 {
   "name": "imagepulse-backend",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "private": true,
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",

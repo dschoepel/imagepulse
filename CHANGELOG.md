@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.7.3] — 2026-11-12
+
+### Fixed
+
+- **Pinned-tag watcher never saw new releases on ghcr.io / OCI registries** — `fetchGhcrTags`/`fetchOciTags` read only the first page of `/v2/<name>/tags/list`. ghcr returns 100 tags per page **in push order**, so the newest tags are on the *last* page; for any image with more than 100 tags the watcher silently found "no newer version" (e.g. `immich-server` pinned at `v3.3.6`: 33,430 tags, page 1 ends at `v1.91.1`, so `v3.4.0`/`v3.4.1` were never seen). Tag listing now goes through a new paginated `listOciTags()` (`services/registryTags.js`): requests `n=1000`, follows `Link: rel="next"` (rewriting ghcr's `n=0` link, which silently falls back to 100/page), up to 500 pages, filtering to version-like tags per page so 200k+-tag repos don't sit in memory.
+- **Release candidates treated as releases** — `normalizeTag("v3.4.0-rc.1")` returned `3.4.0`, so once pagination worked the watcher would have alerted on rcs, and — because an rc compared *equal* to its final release — the real `v3.4.0` would then have been suppressed by the `pinned_tag_notified` dedup. Pre-release tags (`-rc`, `-beta`, `-alpha`, `-dev`, `-pre`, `-preview`, `-nightly`, `-snapshot`, `-canary`, PEP 440 `a1`/`b1`, `_N-dev`) are now ignored unless the pinned tag is itself a pre-release, and a final release always outranks its own pre-releases.
+- **Variant tags reported for plain pins** — candidates must now match the pinned tag's flavor (variant suffix with digits ignored), so a `v3.3.6` pin on `immich-machine-learning` reports `v3.4.1`, not `v3.4.1-rknn` (which ghcr lists first); `v3.3.6-cuda` follows `-cuda`, `1.31.1-alpine3.23` follows `-alpine…`. Equal versions prefer the pin's shape (`version-5.9.0` → `version-5.10.0`).
+- **lscr.io tag lookups always failed** — the token request was hard-coded to `https://<host>/token`, but lscr.io's 401 challenge delegates to `realm="https://ghcr.io/token"`. OCI auth now follows the `WWW-Authenticate` Bearer challenge.
+- **`latest` → version resolution** (`registry.js` `resolveFromGhcr`/`resolveFromOci`) had the same single-page bug and now uses `listOciTags()` too; candidates are ranked by real version precedence (plain tags before variants) instead of a locale string sort.
+
+### Added
+
+- **No more silent failures in tag fetching**: a `warn` is logged when the page cap is hit, a later page fails, or pagination stops advancing (the partial list is still used — it can miss an update but can't cause a false alert); pinned tags that aren't versions (e.g. `alpine`, `2`) get a one-time `warn` instead of being skipped silently. ghcr 429 rate-limit responses (no `Retry-After`) are retried with back-off (1–16 s, 5 tries).
+- **Test suite** — `npm test` (Node's built-in `node:test`, no new dependencies) with real captured tag lists for immich-server, immich-machine-learning, linuxserver/swag and nginx; `LIVE_REGISTRY_TESTS=1 npm test` adds live ghcr.io/lscr.io checks.
+
+---
+
 ## [1.7.2] — 2026-09-18
 
 ### Changed

@@ -2,6 +2,26 @@
 
 ---
 
+## [1.7.3] — 2026-11-12
+
+### Pinned-tag watcher now actually sees new releases on ghcr.io
+
+If you pinned an image hosted on ghcr.io (or another OCI registry) with more than 100 tags, the pinned-tag watcher was quietly never telling you about updates. Immich was the case that exposed it: pinned at `v3.3.6`, Immich shipped `v3.4.0` and `v3.4.1`, and ImagePulse said nothing.
+
+The cause: ghcr hands out its tag list 100 at a time, oldest first, and ImagePulse only ever read the first batch. `immich-server` has over 33,000 tags (mostly per-commit builds), so the first batch stopped somewhere around `v1.91` — and from the watcher's point of view, nothing newer existed. No error, no log line. ImagePulse now reads the whole list (immich-machine-learning alone is ~224,000 tags; it takes about 20 seconds every 6 hours), and if the list ever comes back incomplete — page limit reached, a registry error part-way, rate limiting that doesn't clear — it now logs a warning instead of failing silently.
+
+Fixing that uncovered three more things, all fixed too:
+
+- **Release candidates.** `v3.4.0-rc.1` was being read as `3.4.0`. That would have meant an alert for every release candidate — and, worse, the real `v3.4.0` would then have been treated as "already notified". Pre-release tags (`-rc`, `-beta`, `-alpha`, `-dev`, …) are now ignored unless the tag you pinned is itself a pre-release, and a final release always counts as newer than its release candidates.
+- **Variant tags.** Images like `immich-machine-learning` publish each version several ways (`v3.4.1`, `v3.4.1-cuda`, `v3.4.1-rknn`, …). The watcher now sticks to the variant you pinned — pin `v3.3.6` and you'll hear about `v3.4.1`, pin `v3.3.6-cuda` and you'll hear about `v3.4.1-cuda`. Same for `-alpine` and LinuxServer `-ls` builds.
+- **lscr.io (LinuxServer's registry) never worked** for tag lookups — it hands authentication off to ghcr.io, which ImagePulse didn't follow. It does now.
+
+The same fixes apply to resolving which version a `latest`-tagged update actually is, so those version labels should be more accurate for large ghcr images too.
+
+One more thing you may see in the logs: pinned tags that aren't version numbers (like `alpine` or `2`) can't be compared, so the watcher skips them — it now says so once at startup instead of skipping them silently. Docker Hub images were not affected by the pagination problem.
+
+---
+
 ## [1.7.2] — 2026-09-18
 
 ### LinuxServer.io repo guess fix

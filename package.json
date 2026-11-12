@@ -1,6 +1,6 @@
 {
   "name": "imagepulse",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "private": true,
   "workspaces": [
     "backend",
@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
     "build": "npm run build --workspace=frontend",
-    "start": "npm run start --workspace=backend"
+    "start": "npm run start --workspace=backend",
+    "test": "npm test --workspace=backend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

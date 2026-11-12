@@ -22,7 +22,11 @@ every endpoint.
 - Backend: Express.js + `better-sqlite3` (WAL mode), plain JS (`"type": "module"`), pino logging
 - Frontend: React 18 + React Router v6 + Tailwind CSS + Recharts + Heroicons, built with Vite
 - npm workspaces: root `package.json` orchestrates `backend/` and `frontend/`
-- No test suite exists — verify changes by running the app (`npm run dev`) or with the `run` skill
+- Tests: Node's built-in `node:test`, no extra deps. `npm test` (root or `backend/`) runs
+  `backend/test/*.test.js` against real captured tag lists in `backend/test/fixtures/`;
+  `LIVE_REGISTRY_TESTS=1 npm test` also hits real ghcr.io/lscr.io. Coverage is the
+  tag/version logic only — verify everything else by running the app (`npm run dev`)
+  or with the `run` skill
 
 ## Commands
 
@@ -43,7 +47,8 @@ docker compose up -d      # full container build/run, per docker-compose.yml
   `parseWebhook()` in `index.js` detects the source and dispatches
 - `backend/src/services/` — `ntfy.js`, `email.js`, `emailTemplate.js`, `github.js`
   (release notes), `registry.js` (Docker Hub/GHCR tag + digest resolution),
-  `tagWatcher.js` (pinned-tag polling)
+  `tagWatcher.js` (pinned-tag polling), `registryTags.js` (paginated OCI tag listing),
+  `tagVersions.js` (pure tag parsing/comparison — the unit-tested core)
 - `backend/src/db/index.js` — schema, safe migrations, all query helpers
 - `frontend/src/pages/` — `Events.jsx`, `EventArchive.jsx`, `Mappings.jsx`, `Settings.jsx`
 - `frontend/src/api.js` — `apiFetch()` wrapper used by all frontend API calls
@@ -79,6 +84,14 @@ docker compose up -d      # full container build/run, per docker-compose.yml
   `validate-mapping` GitHub check. This was also the first polling pattern introduced in
   the frontend (`Layout.jsx`, 60s interval) — `versionInfo` nearby is still fetch-once,
   don't confuse the two.
+- **Registry tag lists**: always go through `listOciTags()` (`services/registryTags.js`) for
+  ghcr/OCI — never a single `GET /tags/list`. ghcr lists tags in push order, so the newest
+  are on the *last* page (immich-machine-learning: 224 pages of 1000), throttles bursts
+  with 429 (retried with back-off), and lscr.io delegates auth to ghcr via the
+  `WWW-Authenticate` realm. Truncated lists log a `warn` — keep it that way.
+- **Version comparison**: use `tagVersions.js`. Pre-release tags (`-rc`, `-beta`, `-dev`, …)
+  are ignored unless the pin is itself a pre-release, a final release always outranks its
+  rcs, and candidates must match the pin's flavor (`-cuda`, `-alpine`, `-ls`, …).
 
 ## Release process
 

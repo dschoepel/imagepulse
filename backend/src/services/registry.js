@@ -2,6 +2,8 @@
 // Resolves a `latest` digest to a semver tag by querying the registry's tag list.
 
 import logger from '../logger.js';
+import { listOciTags } from './registryTags.js';
+import { parseTag, compareParsed } from './tagVersions.js';
 
 const _cache = new Map();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
@@ -114,93 +116,31 @@ async function resolveFromHub(namespace, name, digest) {
   return null;
 }
 
+const MAX_HEAD_CANDIDATES = 20;
+
+const MANIFEST_ACCEPT = [
+  'application/vnd.docker.distribution.manifest.list.v2+json',
+  'application/vnd.oci.image.index.v1+json',
+  'application/vnd.docker.distribution.manifest.v2+json',
+].join(', ');
+
 /**
- * Fetch an anonymous OCI pull token.
+ * Order semver-ish tags newest first (a release above its own pre-releases),
+ * with plain tags ahead of variants of the same version (v1.2.3 before
+ * v1.2.3-cuda), and keep the top N to HEAD.
  */
-async function fetchOciToken(host, scope) {
-  const res = await fetch(
-    `https://${host}/token?service=${host}&scope=${encodeURIComponent(scope)}`
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.token || data.access_token || null;
+export function rankDigestCandidates(tags, limit = MAX_HEAD_CANDIDATES) {
+  return tags
+    .map((tag) => ({ tag, p: parseTag(tag) }))
+    .filter((c) => c.p)
+    .sort((a, b) => compareParsed(b.p, a.p) || (a.p.flavor ? 1 : 0) - (b.p.flavor ? 1 : 0))
+    .slice(0, limit)
+    .map((c) => c.tag);
 }
 
-/**
- * Resolve via GHCR using OCI token + HEAD manifests.
- */
-async function resolveFromGhcr(namespace, name, digest) {
-  const scope = `repository:${namespace}/${name}:pull`;
-  const token = await fetchOciToken('ghcr.io', scope);
-  if (!token) return null;
-
-  const tagsRes = await fetch(
-    `https://ghcr.io/v2/${namespace}/${name}/tags/list`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!tagsRes.ok) return null;
-  const tagsData = await tagsRes.json();
-
-  const candidates = (tagsData.tags || [])
-    .filter((t) => SEMVER_RE.test(t))
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }))
-    .slice(0, 20);
-
-  const acceptHeader = [
-    'application/vnd.docker.distribution.manifest.list.v2+json',
-    'application/vnd.oci.image.index.v1+json',
-    'application/vnd.docker.distribution.manifest.v2+json',
-  ].join(', ');
-
-  for (const tag of candidates) {
-    const headRes = await fetch(
-      `https://ghcr.io/v2/${namespace}/${name}/manifests/${tag}`,
-      {
-        method: 'HEAD',
-        headers: { Authorization: `Bearer ${token}`, Accept: acceptHeader },
-      }
-    );
-    if (headRes.ok && headRes.headers.get('docker-content-digest') === digest) {
-      return tag;
-    }
-  }
-  return null;
-}
-
-/**
- * Resolve via a generic OCI registry using HEAD manifests.
- * Tries unauthenticated first; falls back to token auth on 401.
- */
-async function resolveFromOci(host, imagePath, digest) {
-  const acceptHeader = [
-    'application/vnd.docker.distribution.manifest.list.v2+json',
-    'application/vnd.oci.image.index.v1+json',
-    'application/vnd.docker.distribution.manifest.v2+json',
-  ].join(', ');
-
-  // Attempt to list tags — unauthenticated first
-  let tagsRes = await fetch(`https://${host}/v2/${imagePath}/tags/list`);
-
-  let token = null;
-  if (tagsRes.status === 401) {
-    const scope = `repository:${imagePath}:pull`;
-    token = await fetchOciToken(host, scope);
-    if (!token) return null;
-    tagsRes = await fetch(`https://${host}/v2/${imagePath}/tags/list`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-  if (!tagsRes.ok) return null;
-
-  const tagsData = await tagsRes.json();
-  const candidates = (tagsData.tags || [])
-    .filter((t) => SEMVER_RE.test(t))
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }))
-    .slice(0, 20);
-
-  const headers = { Accept: acceptHeader };
+async function findTagByDigest(host, imagePath, candidates, token, digest) {
+  const headers = { Accept: MANIFEST_ACCEPT };
   if (token) headers.Authorization = `Bearer ${token}`;
-
   for (const tag of candidates) {
     const headRes = await fetch(
       `https://${host}/v2/${imagePath}/manifests/${tag}`,
@@ -211,6 +151,32 @@ async function resolveFromOci(host, imagePath, digest) {
     }
   }
   return null;
+}
+
+/**
+ * Resolve via GHCR: full (paginated) tag list, then HEAD manifests of the newest candidates.
+ */
+async function resolveFromGhcr(namespace, name, digest) {
+  const imagePath = `${namespace}/${name}`;
+  const list = await listOciTags({
+    host: 'ghcr.io', path: imagePath, tokenFirst: true,
+    filter: (t) => SEMVER_RE.test(t), label: `ghcr.io/${imagePath}`,
+  });
+  if (!list) return null;
+  return findTagByDigest('ghcr.io', imagePath, rankDigestCandidates(list.tags), list.token, digest);
+}
+
+/**
+ * Resolve via a generic OCI registry using HEAD manifests.
+ * Tries unauthenticated first; falls back to token auth on 401.
+ */
+async function resolveFromOci(host, imagePath, digest) {
+  const list = await listOciTags({
+    host, path: imagePath,
+    filter: (t) => SEMVER_RE.test(t), label: `${host}/${imagePath}`,
+  });
+  if (!list) return null;
+  return findTagByDigest(host, imagePath, rankDigestCandidates(list.tags), list.token, digest);
 }
 
 /**
